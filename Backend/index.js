@@ -68,6 +68,31 @@ app.post("/tambahArtikel", (req, res) => {
   });
 });
 
+app.get("/artikel", (req, res) => {
+    const sql = "SELECT * FROM ArtikelKucing"; // Mengambil semua artikel
+    connection.query(sql, (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data artikel" });
+      }
+      return res.status(200).json(results); // Mengembalikan daftar artikel
+    });
+  });
+  
+  app.get("/artikel/:id", (req, res) => {
+    const id_artikel = req.params.id; // Mengambil id_artikel dari parameter URL
+    const sql = "SELECT * FROM ArtikelKucing WHERE id_artikel = ?"; // Mengambil data artikel tertentu
+    connection.query(sql, [id_artikel], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data artikel" });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Artikel tidak ditemukan" });
+      }
+      return res.status(200).json(results[0]); // Mengembalikan data artikel
+    });
+  });
+  
+
 // Tambah topik diskusi
 app.post("/tambahTopikDiskusi", (req, res) => {
   const { judul_topik, konten_topik, tanggal_post, id_pengguna } = req.body;
@@ -77,6 +102,30 @@ app.post("/tambahTopikDiskusi", (req, res) => {
     res.status(200).json({ message: "Topik diskusi berhasil ditambahkan" });
   });
 });
+
+app.get("/diskusi", (req, res) => {
+    const sql = "SELECT * FROM Diskusi"; // Mengambil semua topik diskusi
+    connection.query(sql, (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data diskusi" });
+      }
+      return res.status(200).json(results); // Mengembalikan daftar diskusi
+    });
+  });
+
+  app.get("/diskusi/:id", (req, res) => {
+    const id_topik = req.params.id; // Mengambil id_topik dari parameter URL
+    const sql = "SELECT * FROM Diskusi WHERE id_topik = ?"; // Mengambil data topik diskusi tertentu
+    connection.query(sql, [id_topik], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data diskusi" });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Topik diskusi tidak ditemukan" });
+      }
+      return res.status(200).json(results[0]); // Mengembalikan data topik diskusi
+    });
+  });
 
 // Tambah balasan diskusi
 app.post("/tambahBalasan", (req, res) => {
@@ -119,6 +168,30 @@ app.post("/tambahKucingAdopsi", (req, res) => {
   });
 });
 
+app.get("/adopsi", (req, res) => {
+    const sql = "SELECT * FROM KucingAdopsi"; // Mengambil semua kucing yang tersedia untuk adopsi
+    connection.query(sql, (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data kucing untuk adopsi" });
+      }
+      return res.status(200).json(results); // Mengembalikan daftar kucing
+    });
+  });
+
+  app.get("/adopsi/:id", (req, res) => {
+    const id_kucing = req.params.id; // Mengambil id_kucing dari parameter URL
+    const sql = "SELECT * FROM KucingAdopsi WHERE id_kucing = ?"; // Mengambil data kucing tertentu
+    connection.query(sql, [id_kucing], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Gagal mengambil data kucing untuk adopsi" });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Kucing tidak ditemukan" });
+      }
+      return res.status(200).json(results[0]); // Mengembalikan data kucing
+    });
+  });
+  
 app.listen(port, () => {
   console.log(`Backend berjalan di http://localhost:${port}`);
 });
