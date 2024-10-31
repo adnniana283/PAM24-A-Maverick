@@ -178,7 +178,7 @@ app.get("/adopsi", (req, res) => {
     });
   });
 
-  app.get("/adopsi/:id", (req, res) => {
+  app.get("/adopsi/:id", (req, res) => { 
     const id_kucing = req.params.id; // Mengambil id_kucing dari parameter URL
     const sql = "SELECT * FROM KucingAdopsi WHERE id_kucing = ?"; // Mengambil data kucing tertentu
     connection.query(sql, [id_kucing], (err, results) => {
