@@ -1,16 +1,15 @@
 {
-  "dependencies": {
-    "express": "^4.21.1",
-    "mysql2": "^3.11.3"
-  },
   "name": "backend",
   "version": "1.0.0",
-  "description": "belajar backend",
+  "description": "PawFeeder",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "niyak",
-  "license": "ISC"
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "mysql2": "^3.11.3"
+  }
 }
