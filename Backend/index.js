@@ -26,7 +26,7 @@ connection.connect((err) => {
 // Routes for Pengguna (Users)
 app.post('/pengguna', [
   body('username').isString().notEmpty(),
-  body('email').isEmail(),
+  body('email').isEmail().notEmpty(),
   body('password_hash').isString().notEmpty(),
   body('nama_lengkap').isString().notEmpty(),
 ], (req, res) => {
@@ -202,10 +202,14 @@ app.get('/diskusi', (req, res) => {
   });
 });
 
-// Routes for Balasan (Replies)
 app.post('/balasan', [
   body('id_topik').isInt(),
-  body('id_parent_balasan').optional().isInt(),
+  body('id_parent_balasan').optional().custom(value => {
+    if (value !== null && !Number.isInteger(value)) {
+      throw new Error('id_parent_balasan must be an integer or null');
+    }
+    return true; // Indicate success
+  }),
   body('konten_balasan').isString().notEmpty(),
   body('tanggal_balasan').isDate(),
   body('id_pengguna').isInt(),
@@ -236,7 +240,7 @@ app.get('/balasan/:id_topik', (req, res) => {
 // Routes for RiwayatPemberianMakan (Feeding History)
 app.post('/riwayat-pemberian', [
   body('id_kucing').isInt(),
-  body('tanggal_pemberian').isDate(),
+  body('waktu_makan').isISO8601().toDate(), // Validasi dan konversi ke objek Date
   body('jumlah_pemberian').isInt(),
 ], (req, res) => {
   const errors = validationResult(req);
@@ -244,9 +248,9 @@ app.post('/riwayat-pemberian', [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { id_kucing, tanggal_pemberian, jumlah_pemberian } = req.body;
-  const query = 'INSERT INTO RiwayatPemberianMakan (id_kucing, tanggal_pemberian, jumlah_pemberian) VALUES (?, ?, ?)';
-  connection.execute(query, [id_kucing, tanggal_pemberian, jumlah_pemberian], (err, results) => {
+  const { id_kucing, waktu_makan, jumlah_pemberian } = req.body;
+  const query = 'INSERT INTO RiwayatPemberianMakan (id_kucing, waktu_makan, jumlah_pemberian) VALUES (?, ?, ?)';
+  connection.execute(query, [id_kucing, waktu_makan, jumlah_pemberian], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ id_riwayat: results.insertId });
   });
@@ -263,28 +267,34 @@ app.get('/riwayat-pemberian/:id_kucing', (req, res) => {
 });
 
 // Routes for KucingDiadopsi (Adopted Cats)
-app.post('/kucing-diadopsi', [
-  body('id_kucing').isInt(),
-  body('tanggal_adopsi').isDate(),
-  body('nama_adopter').isString().notEmpty(),
-  body('id_pengguna').isInt(),
+app.post('/kucing-adopsi', [
+  body('nama').isString().notEmpty(),
+  body('usia').isInt().notEmpty(), // Hanya isInt() diperlukan
+  body('kesehatan').isString().notEmpty(),
+  body('lokasi_penampungan').isString().notEmpty(),
+  body('deskripsi').optional().isString(),
+  body('kontak_penampungan').isString().notEmpty(),
+  body('status_adopsi').optional().isBoolean(), // optional, karena sudah ada default di database
+  body('foto_kucing').isString().notEmpty(),
+  body('jenis').isString().notEmpty(), // Pastikan untuk menambahkan validasi jenis
 ], (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { id_kucing, tanggal_adopsi, nama_adopter, id_pengguna } = req.body;
-  const query = 'INSERT INTO KucingDiadopsi (id_kucing, tanggal_adopsi, nama_adopter, id_pengguna) VALUES (?, ?, ?, ?)';
-  connection.execute(query, [id_kucing, tanggal_adopsi, nama_adopter, id_pengguna], (err, results) => {
+  const { nama, jenis, usia, kesehatan, lokasi_penampungan, deskripsi, kontak_penampungan, status_adopsi, foto_kucing } = req.body;
+  const query = 'INSERT INTO Kucingadopsi (nama, jenis, usia, kesehatan, lokasi_penampungan, deskripsi, kontak_penampungan, status_adopsi, foto_kucing) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  
+  connection.execute(query, [nama, jenis, usia, kesehatan, lokasi_penampungan, deskripsi, kontak_penampungan, status_adopsi ?? 0, foto_kucing], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id_kucing_diadopsi: results.insertId });
+    res.status(201).json({ id_kucing_adopsi: results.insertId });
   });
 });
 
 // GET all adopted cats
-app.get('/kucing-diadopsi', (req, res) => {
-  const query = 'SELECT * FROM KucingDiadopsi';
+app.get('/kucing-adopsi', (req, res) => {
+  const query = 'SELECT * FROM Kucingadopsi';
   connection.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.status(200).json(results);
