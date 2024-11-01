@@ -1,0 +1,83 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table Pengguna {
+  id_pengguna integer [pk, increment]
+  username varchar [not null, unique]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  nama_lengkap varchar [not null]
+}
+
+Table KucingPengguna {
+  id_kucing integer [pk, increment]
+  id_pengguna integer [not null]
+  nama varchar [not null]
+  jenis varchar [not null]
+  usia integer
+  berat decimal(5,2)
+  kebutuhan_kalori integer
+  id_sensor varchar [not null]
+  foto_kucing varchar
+  status enum('active', 'inactive') [default: 'active']
+}
+
+Table JadwalPemberianMakan {
+  id_detail integer [pk, increment]
+  id_kucing integer [not null]
+  waktu_makan datetime [not null]
+}
+
+Table ArtikelKucing {
+  id_artikel integer [pk, increment]
+  judul varchar [not null]
+  konten text [not null]
+  tanggal_publikasi date [not null]
+  penulis varchar [not null]
+  foto_artikel varchar
+}
+
+Table Diskusi {
+  id_topik integer [pk, increment]
+  konten_topik text [not null]
+  tanggal_post date [not null]
+  id_pengguna integer [not null]
+}
+
+Table Balasan {
+  id_balasan integer [pk, increment]
+  id_topik integer [not null]
+  id_parent_balasan integer
+  konten_balasan text [not null]
+  tanggal_balasan date [not null]
+  id_pengguna integer [not null]
+}
+
+Table RiwayatPemberianMakan {
+  id_riwayat integer [pk, increment]
+  id_kucing integer [not null]
+  waktu_makan datetime [not null]
+  jumlah_pemberian integer [not null]
+}
+
+Table KucingDiadopsi {
+  id_kucing_adopsi integer [pk, increment]
+  nama varchar [not null]
+  jenis varchar [not null]
+  usia integer [not null]
+  kesehatan varchar [not null]
+  lokasi_penampungan varchar [not null]
+  deskripsi text
+  kontak_penampungan varchar [not null]
+  status_adopsi boolean [default: false]
+  foto_kucing varchar [not null]
+}
+
+// Relationships
+Ref: KucingPengguna.id_pengguna > Pengguna.id_pengguna
+Ref: JadwalPemberianMakan.id_kucing > KucingPengguna.id_kucing
+Ref: Diskusi.id_pengguna > Pengguna.id_pengguna
+Ref: Balasan.id_topik > Diskusi.id_topik
+Ref: Balasan.id_parent_balasan > Balasan.id_balasan
+Ref: Balasan.id_pengguna > Pengguna.id_pengguna
+Ref: RiwayatPemberianMakan.id_kucing > KucingPengguna.id_kucing

@@ -1,0 +1,67 @@
+CREATE TABLE Pengguna (
+    id_pengguna INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
+    email VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255), -- Menyimpan hash dari password
+    nama_lengkap VARCHAR(100),
+    tanggal_bergabung DATE,
+    foto_profil VARCHAR(255) -- Menyimpan URL atau path ke foto profil pengguna
+);
+
+CREATE TABLE KucingPengguna (
+    id_kucing INT PRIMARY KEY AUTO_INCREMENT,
+    id_pengguna INT,
+    nama VARCHAR(50),
+    usia INT,
+    berat DECIMAL(5,2),
+    kebutuhan_kalori INT,
+    id_sensor VARCHAR(50) UNIQUE, -- ID tag collar untuk identifikasi otomatis
+    FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna)
+);
+
+CREATE TABLE ArtikelKucing (
+    id_artikel INT PRIMARY KEY AUTO_INCREMENT,
+    judul VARCHAR(255),
+    konten TEXT,
+    tanggal_publikasi DATE,
+    penulis VARCHAR(100),
+    foto_artikel VARCHAR(255) -- Menyimpan URL atau path ke gambar artikel
+);
+
+CREATE TABLE Diskusi (
+    id_topik INT PRIMARY KEY AUTO_INCREMENT,
+    judul_topik VARCHAR(255),
+    konten_topik TEXT,
+    tanggal_post DATE,
+    id_pengguna INT,
+    FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna)
+);
+
+CREATE TABLE Balasan (
+    id_balasan INT PRIMARY KEY AUTO_INCREMENT,
+    id_topik INT,
+    konten_balasan TEXT,
+    tanggal_balasan DATE,
+    id_pengguna INT,
+    FOREIGN KEY (id_topik) REFERENCES Diskusi(id_topik),
+    FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna)
+);
+
+CREATE TABLE RiwayatPemberianMakan (
+    id_riwayat INT PRIMARY KEY AUTO_INCREMENT,
+    id_kucing INT,
+    waktu_makan DATETIME,
+    FOREIGN KEY (id_kucing) REFERENCES KucingPengguna(id_kucing)
+);
+
+CREATE TABLE KucingAdopsi (
+    id_kucing_adopsi INT PRIMARY KEY AUTO_INCREMENT,
+    nama VARCHAR(50),
+    usia INT,
+    kesehatan VARCHAR(255),
+    lokasi_penampungan VARCHAR(255),
+    deskripsi TEXT,
+    kontak_penampungan VARCHAR(50),
+    status_adopsi BOOLEAN DEFAULT 0, -- 0 = belum diadopsi, 1 = sudah diadopsi
+    foto_kucing VARCHAR(255) -- Menyimpan URL atau path ke foto kucing
+);
