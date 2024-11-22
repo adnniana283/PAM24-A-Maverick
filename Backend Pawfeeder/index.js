@@ -26,11 +26,13 @@ connection.connect((err) => {
 });
 
 // MQTT Client setup
-const mqttClient = mqtt.connect("mqtt://test.mosquitto.org:1883");
+const mqttClient = mqtt.connect("mqtt://broker.emqx.io:1883");
 
 // MQTT client connection event
 mqttClient.on("connect", () => {
   console.log("MQTT Connected");
+
+  // Subscribe ke topik 'feeder/jadwal'
   mqttClient.subscribe("feeder/jadwal", (err) => {
     if (err) {
       console.error("Failed to subscribe to topic: feeder/jadwal");
@@ -38,78 +40,87 @@ mqttClient.on("connect", () => {
       console.log("Subscribed to topic: feeder/jadwal");
     }
   });
+
+  // Subscribe ke topik 'feeder/command'
+  mqttClient.subscribe("feeder/status", (err) => {
+    if (err) {
+      console.error("Failed to subscribe to topic: feeder/status");
+    } else {
+      console.log("Subscribed to topic: feeder/status");
+    }
+  });
 });
 
 // Mengambil data dari MQTT dan menyimpannya ke database
-mqttClient.on("message", (topic, message) => {
-  console.log(`Received message on topic ${topic}: ${message.toString()}`);
+// mqttClient.on("message", (topic, message) => {
+//   console.log(`Received message on topic ${topic}: ${message.toString()}`);
 
-  if (topic === "feeder/jadwal") {
-    try {
-      const data = JSON.parse(message.toString());
-      const { id_kucing, waktu_makan, berapa_kali_makan, kebutuhan_kalori } = data;
+//   if (topic === "feeder/jadwal") {
+//     try {
+//       const data = JSON.parse(message.toString());
+//       const { id_kucing, waktu_makan, berapa_kali_makan, kebutuhan_kalori } = data;
 
-      // Pastikan waktu_makan adalah array
-      if (!Array.isArray(waktu_makan)) {
-        throw new Error("Invalid data: waktu_makan should be an array");
-      }
+//       // Pastikan waktu_makan adalah array
+//       if (!Array.isArray(waktu_makan)) {
+//         throw new Error("Invalid data: waktu_makan should be an array");
+//       }
 
-      // Hitung jumlah makanan per kali makan (dalam gram)
-      const foodPerFeeding = kebutuhan_kalori
-        ? kebutuhan_kalori / berapa_kali_makan
-        : 100; // Default 100 gram jika kebutuhan kalori tidak ada
-      const todayDate = moment().format("YYYY-MM-DD"); // Format tanggal
+//       // Hitung jumlah makanan per kali makan (dalam gram)
+//       const foodPerFeeding = kebutuhan_kalori
+//         ? kebutuhan_kalori / berapa_kali_makan
+//         : 100; // Default 100 gram jika kebutuhan kalori tidak ada
+//       const todayDate = moment().format("YYYY-MM-DD"); // Format tanggal
 
-      // Loop melalui waktu_makan dan simpan ke database
-      const insertPromises = waktu_makan.map(waktu => {
-        const query =
-          "INSERT INTO JadwalPemberianMakan (id_kucing, waktu_makan, berapa_kali_makan, kebutuhan_kalori) VALUES (?, ?, ?, ?)";
-        return new Promise((resolve, reject) => {
-          connection.execute(
-            query,
-            [id_kucing, waktu, berapa_kali_makan, foodPerFeeding],
-            (err, results) => {
-              if (err) return reject(err);
+//       // Loop melalui waktu_makan dan simpan ke database
+//       const insertPromises = waktu_makan.map(waktu => {
+//         const query =
+//           "INSERT INTO JadwalPemberianMakan (id_kucing, waktu_makan, berapa_kali_makan, kebutuhan_kalori) VALUES (?, ?, ?, ?)";
+//         return new Promise((resolve, reject) => {
+//           connection.execute(
+//             query,
+//             [id_kucing, waktu, berapa_kali_makan, foodPerFeeding],
+//             (err, results) => {
+//               if (err) return reject(err);
 
-              // Masukkan ke tabel RiwayatPemberianMakan
-              const riwayatQuery =
-                "INSERT INTO RiwayatPemberianMakan (id_kucing, waktu_makan, jumlah_pemberian) VALUES (?, ?, ?)";
-              const riwayatWaktuMakan = `${todayDate} ${waktu}`; // Gabungkan tanggal dengan waktu makan
+//               // Masukkan ke tabel RiwayatPemberianMakan
+//               const riwayatQuery =
+//                 "INSERT INTO RiwayatPemberianMakan (id_kucing, waktu_makan, jumlah_pemberian) VALUES (?, ?, ?)";
+//               const riwayatWaktuMakan = `${todayDate} ${waktu}`; // Gabungkan tanggal dengan waktu makan
 
-              connection.execute(
-                riwayatQuery,
-                [id_kucing, riwayatWaktuMakan, foodPerFeeding],
-                (err, riwayatResults) => {
-                  if (err) return reject(err);
-                  console.log(
-                    `For cat ID ${id_kucing}, at time ${riwayatWaktuMakan}, dispense ${foodPerFeeding} grams of food.`
-                  );
-                  resolve({
-                    id_detail: results.insertId,
-                    id_riwayat: riwayatResults.insertId,
-                    waktu_makan: riwayatWaktuMakan,
-                    foodPerFeeding,
-                  });
-                }
-              );
-            }
-          );
-        });
-      });
+//               connection.execute(
+//                 riwayatQuery,
+//                 [id_kucing, riwayatWaktuMakan, foodPerFeeding],
+//                 (err, riwayatResults) => {
+//                   if (err) return reject(err);
+//                   console.log(
+//                     `For cat ID ${id_kucing}, at time ${riwayatWaktuMakan}, dispense ${foodPerFeeding} grams of food.`
+//                   );
+//                   resolve({
+//                     id_detail: results.insertId,
+//                     id_riwayat: riwayatResults.insertId,
+//                     waktu_makan: riwayatWaktuMakan,
+//                     foodPerFeeding,
+//                   });
+//                 }
+//               );
+//             }
+//           );
+//         });
+//       });
 
-      // Tunggu semua data tersimpan
-      Promise.all(insertPromises)
-        .then(results => {
-          console.log("Schedules and history inserted successfully");
-        })
-        .catch(err => {
-          console.error("Error inserting schedules or history: ", err);
-        });
-    } catch (error) {
-      console.error("Error parsing message: " + error.message);
-    }
-  }
-});
+//       // Tunggu semua data tersimpan
+//       Promise.all(insertPromises)
+//         .then(results => {
+//           console.log("Schedules and history inserted successfully");
+//         })
+//         .catch(err => {
+//           console.error("Error inserting schedules or history: ", err);
+//         });
+//     } catch (error) {
+//       console.error("Error parsing message: " + error.message);
+//     }
+//   }
+// });
 
 
 /** PENGGUNA **/
@@ -306,7 +317,7 @@ app.get("/pengguna", (req, res) => {
         .then(results => {
             const feedingSchedule = {
                 id_kucing,
-                foodPerFeeding,
+                kebutuhan_kalori,
                 berapa_kali_makan,
                 waktu_makan: waktu_makan.map(waktu => {
                     const [jam, menit] = waktu.split(':');
@@ -437,6 +448,25 @@ app.get("/pengguna", (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({ id_balasan: results.insertId });
     });
+  });
+
+  // Endpoint untuk mengirimkan perintah ke feeder
+  app.post('/status', (req, res) => {
+    const status = req.body.status.toUpperCase(); // Mengambil status dari request body
+    
+    if (status === 'ON' || status === 'OFF') {
+      // Mengirim status ke feeder melalui MQTT menggunakan mqttClient
+      mqttClient.publish('feeder/status', JSON.stringify({ status: status }), (err) => {
+        if (err) {
+          console.error('Error publishing MQTT message:', err);
+          return res.status(500).json({ error: 'Failed to send message to feeder' });
+        }
+        console.log(`Sent to ESP32: ${status}`);
+        res.status(200).json({ message: `Perintah ${status} berhasil dikirim ke feeder.` });
+      });
+    } else {
+      res.status(400).send('Perintah tidak valid, hanya "ON" atau "OFF" yang diterima.');
+    }
   });
 
 // Start the server
