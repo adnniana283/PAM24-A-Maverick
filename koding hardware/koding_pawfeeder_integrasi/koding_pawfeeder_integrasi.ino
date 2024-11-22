@@ -21,13 +21,16 @@ NewPing sonar1(TRIGGER_PIN_1, ECHO_PIN_1, MAX_DISTANCE);
 NewPing sonar2(TRIGGER_PIN_2, ECHO_PIN_2, MAX_DISTANCE);
 
 // WiFi credentials
-const char* ssid = "alyaa";
-const char* password = "punyaalya";
+const char* ssid = "niyak";
+const char* password = "hapeniyaak";
 
 // MQTT server credentials
-const char* mqttServer = "test.mosquitto.org";
+const char* mqttServer = "broker.emqx.io";
 const int mqttPort = 1883;
 const char* mqttTopic = "feeder/jadwal";
+
+bool feederAktif = true; // Status feeder (default aktif)
+const char* mqttStatusTopic = "feeder/status"; // Topic untuk mengatur status feeder
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -37,6 +40,7 @@ int jadwalJam[5];   // Maksimal 5 jadwal makan
 int jadwalMenit[5];
 int kebutuhanKalori = 0;
 int idKucing = 0;
+int kaloriPerMakan = 0;
 float kaloriPerCm = 62.5;  // Misalnya, 62.5 kalori per 1 cm (500 kalori = 8 cm)
 
 // Menghitung jarak penuh berdasarkan kalori
@@ -60,9 +64,10 @@ void setup() {
   connectToWiFi();
   setupMQTT();
 
-  // Subscribe untuk menerima jadwal makan via MQTT
-  mqttClient.subscribe(mqttTopic);  // Sesuaikan dengan topic yang digunakan pada backend
-}
+  // Subscribe untuk menerima jadwal makan dan status feeder via MQTT
+  mqttClient.subscribe(mqttTopic);       // Topik untuk jadwal
+  mqttClient.subscribe(mqttStatusTopic); // Topik untuk status feeder
+ }
 
 void loop() {
   if (!mqttClient.connected()) {
@@ -71,25 +76,30 @@ void loop() {
   mqttClient.loop();
 
   // Cek input manual melalui serial
-  if (Serial.available()) {
-    handleManualInput();
+//  if (Serial.available()) {
+//    handleManualInput();
+//  }
+
+  if (feederAktif) {
+    // Skema 1: Berdasarkan jadwal
+    checkScheduleAndFeed(); 
+    // Skema 2: Berdasarkan deteksi kucing
+    //detectCatAndFeed();     
+  } else {
+    Serial.println("Feeder sedang tidak aktif.");
   }
 
-  // Skema 1: Berdasarkan jadwal
-  checkScheduleAndFeed(); 
-  // Skema 2: Berdasarkan deteksi kucing
-  //detectCatAndFeed();     
-  delay(1000);            // Interval pengecekan
+  delay(1000); // Interval pengecekan
 }
 
 // Fungsi untuk menerima input integer dari pengguna melalui serial
-int getInputInt(String prompt) {
-  int value;
-  Serial.println(prompt);
-  while (Serial.available() == 0);  // Tunggu sampai data masuk
-  value = Serial.parseInt();        // Ambil input sebagai integer
-  return value;
-}
+//int getInputInt(String prompt) {
+//  int value;
+//  Serial.println(prompt);
+//  while (Serial.available() == 0);  // Tunggu sampai data masuk
+//  value = Serial.parseInt();        // Ambil input sebagai integer
+//  return value;
+//}
 
 // Fungsi yang dipanggil saat pesan MQTT diterima
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -98,121 +108,163 @@ void callback(char* topic, byte* payload, unsigned int length) {
     message += (char)payload[i];
   }
 
-  // Pastikan topik sesuai
   Serial.print("Pesan diterima pada topik: ");
   Serial.println(topic);
   Serial.print("Isi pesan: ");
   Serial.println(message);
 
-  if (String(topic) == mqttTopic) {
-    Serial.println("Pesan jadwal diterima via MQTT:");
+  // Handling for the feeder status topic
+  if (String(topic) == mqttStatusTopic) {
+    // Handle the feeder status (ON/OFF)
+    handleFeederStatus(message);
+  }
 
-    // Coba periksa format payload JSON yang diterima
-    StaticJsonDocument<500> doc;
-    DeserializationError error = deserializeJson(doc, message);
+  // Handling for the feeding schedule topic
+  else if (String(topic) == mqttTopic) {
+    // Handle the feeding schedule
+    handleFeedingSchedule(message);
+  }
+}
 
-    if (error) {
-      Serial.print("Gagal mengurai pesan JSON: ");
-      Serial.println(error.c_str());
-      return;
-    }
+void handleFeederStatus(String message) {
+  StaticJsonDocument<200> doc;  // Create a JSON document to store the parsed data
+  DeserializationError error = deserializeJson(doc, message);  // Parse the JSON message
 
-    // Debugging data yang diterima
-    idKucing = doc["id_kucing"];
-    kebutuhanKalori = doc["kebutuhan_kalori"];
-    jumlahJadwal = doc["berapa_kali_makan"];
-    JsonArray waktuMakanArray = doc["waktu_makan"];
+  if (error) {
+    Serial.print("Gagal mengurai pesan JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
 
-    Serial.println("Data yang diterima:");
-    Serial.print("id_kucing: ");
-    Serial.println(idKucing);
-    Serial.print("kebutuhan_kalori: ");
-    Serial.println(kebutuhanKalori);
-    Serial.print("jumlah_jadwal: ");
-    Serial.println(jumlahJadwal);
-
-    for (int i = 0; i < jumlahJadwal; i++) {
-      // Mengakses elemen waktu_makan yang berupa objek JSON
-      JsonObject waktuMakanObj = waktuMakanArray[i];
-      int jam = waktuMakanObj["jam"];
-      int menit = waktuMakanObj["menit"];
-
-      Serial.print("Waktu makan ke-");
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.print(jam);
-      Serial.print(":");
-      Serial.println(menit);
-
-      // Menyimpan data jadwal
-      jadwalJam[i] = jam;
-      jadwalMenit[i] = menit;
-      
-      Serial.print("Jadwal ke-");
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.print(jam);
-      Serial.print(":");
-      Serial.println(menit);
-    }
-
-    Serial.println("Jadwal makan berhasil diperbarui");
+  // Extract the "status" field from the parsed JSON
+  String status = doc["status"];
+  
+  // Check the status and update feederAktif
+  if (status == "ON") {
+    feederAktif = true;
+    Serial.println("Feeder diaktifkan melalui backend.");
+  } else if (status == "OFF") {
+    feederAktif = false;
+    Serial.println("Feeder dimatikan melalui backend.");
+  } else {
+    Serial.println("Pesan status feeder tidak valid.");
   }
 }
 
 
+// Fungsi untuk menangani jadwal makan
+void handleFeedingSchedule(String message) {
+  StaticJsonDocument<500> doc;
+  DeserializationError error = deserializeJson(doc, message);
+
+  if (error) {
+    Serial.print("Gagal mengurai pesan JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  // Debugging data yang diterima
+  idKucing = doc["id_kucing"];
+  kebutuhanKalori = doc["kebutuhan_kalori"];
+  jumlahJadwal = doc["berapa_kali_makan"];
+  JsonArray waktuMakanArray = doc["waktu_makan"];
+
+  Serial.println("Data yang diterima:");
+  Serial.print("id_kucing: ");
+  Serial.println(idKucing);
+  Serial.print("kebutuhan_kalori: ");
+  Serial.println(kebutuhanKalori);
+  Serial.print("jumlah_jadwal: ");
+  Serial.println(jumlahJadwal);
+
+  // Menghitung kalori per makan
+  if (jumlahJadwal > 0) {
+    kaloriPerMakan = kebutuhanKalori / jumlahJadwal;
+    Serial.print("Kalori per makan: ");
+    Serial.println(kaloriPerMakan);
+  } else {
+    Serial.println("Jumlah jadwal makan tidak valid!");
+    return;
+  }
+
+  for (int i = 0; i < jumlahJadwal; i++) {
+    JsonObject waktuMakanObj = waktuMakanArray[i];
+    int jam = waktuMakanObj["jam"];
+    int menit = waktuMakanObj["menit"];
+
+    Serial.print("Waktu makan ke-");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(jam);
+    Serial.print(":");
+    Serial.println(menit);
+
+    // Menyimpan data jadwal
+    jadwalJam[i] = jam;
+    jadwalMenit[i] = menit;
+
+    Serial.print("Jadwal ke-");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(jam);
+    Serial.print(":");
+    Serial.println(menit);
+  }
+
+  Serial.println("Jadwal makan berhasil diperbarui.");
+}
       
 
 // Fungsi untuk menangani input manual melalui serial
-void handleManualInput() {
-  String input = Serial.readStringUntil('\n');
-  if (input.startsWith("set_jadwal")) {
+//void handleManualInput() {
+ // String input = Serial.readStringUntil('\n');
+ // if (input.startsWith("set_jadwal")) {
     // Format input manual: set_jadwal 1 2 7 30 500
     // Dimana: 1 = ID Kucing, 2 = Jumlah Jadwal, 7 = Jam, 30 = Menit, 500 = Kebutuhan Kalori
-    int tempIdKucing, tempJumlahJadwal, tempKebutuhanKalori;
-    sscanf(input.c_str(), "set_jadwal %d %d %d %d %d", &tempIdKucing, &tempJumlahJadwal, &tempKebutuhanKalori);
+ //   int tempIdKucing, tempJumlahJadwal, tempKebutuhanKalori;
+ //   sscanf(input.c_str(), "set_jadwal %d %d %d %d %d", &tempIdKucing, &tempJumlahJadwal, &tempKebutuhanKalori);
 
-    idKucing = tempIdKucing;
-    jumlahJadwal = tempJumlahJadwal;
-    kebutuhanKalori = tempKebutuhanKalori; // Set kebutuhan kalori dari input manual
+ //   idKucing = tempIdKucing;
+ //   jumlahJadwal = tempJumlahJadwal;
+ //   kebutuhanKalori = tempKebutuhanKalori; // Set kebutuhan kalori dari input manual
 
-    for (int i = 0; i < jumlahJadwal; i++) {
-      int jam, menit;
-      jam = getInputInt("Masukkan jam jadwal makan ke-" + String(i + 1) + " (0-23): ");
-      menit = getInputInt("Masukkan menit jadwal makan ke-" + String(i + 1) + " (0-59): ");
-      jadwalJam[i] = jam;
-      jadwalMenit[i] = menit;
-    }
+  //  for (int i = 0; i < jumlahJadwal; i++) {
+  //    int jam, menit;
+  //    jam = getInputInt("Masukkan jam jadwal makan ke-" + String(i + 1) + " (0-23): ");
+  //    menit = getInputInt("Masukkan menit jadwal makan ke-" + String(i + 1) + " (0-59): ");
+  //    jadwalJam[i] = jam;
+  //    jadwalMenit[i] = menit;
+  //  }
 
-    Serial.println("Jadwal makan berhasil diatur!");
+  //  Serial.println("Jadwal makan berhasil diatur!");
 
     // Kirim jadwal makan ke backend melalui MQTT
-    publishFeedingSchedule();
-  }
-}
+  //  publishFeedingSchedule();
+ // }
+//}
 
 // Fungsi untuk mengirim jadwal makan ke backend melalui MQTT
-void publishFeedingSchedule() {
-  StaticJsonDocument<500> doc;
-  doc["id_kucing"] = idKucing;
-  doc["kebutuhan_kalori"] = kebutuhanKalori;
-  doc["berapa_kali_makan"] = jumlahJadwal;
+//void publishFeedingSchedule() {
+//  StaticJsonDocument<500> doc;
+//  doc["id_kucing"] = idKucing;
+//  doc["kebutuhan_kalori"] = kebutuhanKalori;
+//  doc["berapa_kali_makan"] = jumlahJadwal;
 
-  JsonArray waktuMakanArray = doc.createNestedArray("waktu_makan");
+//  JsonArray waktuMakanArray = doc.createNestedArray("waktu_makan");
   
-  for (int i = 0; i < jumlahJadwal; i++) {
-    JsonObject waktuMakan = waktuMakanArray.createNestedObject();
-    waktuMakan["jam"] = jadwalJam[i];
-    waktuMakan["menit"] = jadwalMenit[i];
-  }
+//  for (int i = 0; i < jumlahJadwal; i++) {
+//    JsonObject waktuMakan = waktuMakanArray.createNestedObject();
+//    waktuMakan["jam"] = jadwalJam[i];
+//    waktuMakan["menit"] = jadwalMenit[i];
+//  }
 
-  String output;
-  serializeJson(doc, output);
+//  String output;
+//  serializeJson(doc, output);
   
-  mqttClient.publish(mqttTopic, output.c_str());
-  Serial.println("Jadwal makan dikirim ke backend:");
-  Serial.println(output);
-}
+//  mqttClient.publish(mqttTopic, output.c_str());
+//  Serial.println("Jadwal makan dikirim ke backend:");
+//  Serial.println(output);
+//}
 
 // Skema 1: Cek jadwal makan
 void checkScheduleAndFeed() {
@@ -228,9 +280,9 @@ void checkScheduleAndFeed() {
       feederServo.write(90); // Buka pintu
       delay(1000);
 
-      if (kebutuhanKalori > 0) {
+      if (kaloriPerMakan > 0) {
         // Menghitung jarak berdasarkan kalori yang diset
-        float jarakPenuh = hitungJarakBerdasarkanKalori(kebutuhanKalori);
+        float jarakPenuh = hitungJarakBerdasarkanKalori(kaloriPerMakan);
         while (sonar2.ping_cm() > jarakPenuh) {
           // Distribusi makanan hingga penuh sesuai kalori
           Serial.println("Mengisi makanan...");
@@ -246,7 +298,7 @@ void checkScheduleAndFeed() {
 
       Serial.println("Mangkuk penuh, Menutup pintu...");
       feederServo.write(0); // Tutup pintu
-      delay(60000); // Hindari eksekusi ulang dalam 1 menit
+      delay(5000); // Hindari eksekusi ulang dalam 1 menit
     }
   }
 }
