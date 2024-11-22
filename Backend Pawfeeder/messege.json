@@ -1,0 +1,10 @@
+{
+    "id_kucing": 2,
+    "berapa_kali_makan": 2,
+    "kebutuhan_kalori": 400,
+    "waktu_makan": [
+      "2024-11-20T08:00:00",
+      "2024-11-20T08:00:09"
+    ]
+  }
+  
