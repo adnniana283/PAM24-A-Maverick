@@ -1,0 +1,79 @@
+-- Create Pengguna table
+CREATE TABLE Pengguna (
+  id_pengguna INT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  nama_lengkap VARCHAR(255) NOT NULL
+);
+
+-- Create Kucing table (combined for both pengguna and adopsi)
+CREATE TABLE Kucing (
+  id_kucing INT PRIMARY KEY AUTO_INCREMENT,
+  nama VARCHAR(255) NOT NULL,
+  jenis VARCHAR(50) NOT NULL,
+  tipe_kucing ENUM('pengguna', 'adopsi') NOT NULL,
+  usia INT NOT NULL,
+  berat FLOAT NOT NULL,
+  id_sensor INT,
+  gender ENUM('jantan', 'betina') NOT NULL,
+  kesehatan VARCHAR(255),
+  lokasi_penampungan VARCHAR(255),
+  deskripsi TEXT,
+  kontak_penampungan VARCHAR(50),
+  status_adopsi BOOLEAN DEFAULT 0,
+  foto_kucing VARCHAR(255),
+  id_pengguna INT,
+  FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna) ON DELETE CASCADE
+);
+
+-- Create JadwalPemberianMakan table
+CREATE TABLE JadwalPemberianMakan (
+  id_detail INT PRIMARY KEY AUTO_INCREMENT,
+  id_kucing INT NOT NULL,
+  berapa_kali_makan INT NOT NULL,
+  waktu_makan TIME NOT NULL,
+  kebutuhan_kalori INT,
+  FOREIGN KEY (id_kucing) REFERENCES Kucing(id_kucing) ON DELETE CASCADE
+);
+
+-- Create ArtikelKucing table
+CREATE TABLE ArtikelKucing (
+  id_artikel INT PRIMARY KEY AUTO_INCREMENT,
+  judul VARCHAR(255) NOT NULL,
+  konten TEXT NOT NULL,
+  tanggal_publikasi DATE NOT NULL,
+  penulis VARCHAR(255) NOT NULL,
+  foto_artikel VARCHAR(255)
+);
+
+-- Create Diskusi table
+CREATE TABLE Diskusi (
+  id_topik INT PRIMARY KEY AUTO_INCREMENT,
+  konten_topik TEXT NOT NULL,
+  waktu_post DATETIME NOT NULL,
+  id_pengguna INT NOT NULL,
+  FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna) ON DELETE CASCADE
+);
+
+-- Create Balasan table
+CREATE TABLE Balasan (
+  id_balasan INT PRIMARY KEY AUTO_INCREMENT,
+  id_topik INT NOT NULL,
+  id_parent_balasan INT,
+  konten_balasan TEXT NOT NULL,
+  waktu_balasan DATETIME NOT NULL,
+  id_pengguna INT NOT NULL,
+  FOREIGN KEY (id_topik) REFERENCES Diskusi(id_topik) ON DELETE CASCADE,
+  FOREIGN KEY (id_parent_balasan) REFERENCES Balasan(id_balasan) ON DELETE CASCADE,
+  FOREIGN KEY (id_pengguna) REFERENCES Pengguna(id_pengguna) ON DELETE CASCADE
+);
+
+-- Create RiwayatPemberianMakan table
+CREATE TABLE RiwayatPemberianMakan (
+  id_riwayat INT PRIMARY KEY AUTO_INCREMENT,
+  id_kucing INT NOT NULL,
+  waktu_makan DATETIME NOT NULL,
+  jumlah_pemberian INT NOT NULL,
+  FOREIGN KEY (id_kucing) REFERENCES Kucing(id_kucing) ON DELETE CASCADE
+);
