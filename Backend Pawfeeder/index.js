@@ -25,10 +25,12 @@ connection.connect((err) => {
   console.log("Connected to database as ID " + connection.threadId);
 });
 
-// MQTT Client setup
+// Variabel untuk menyimpan data kapasitas terbaru
+let kapasitasTerakhir = null;
+
+// Setup MQTT Client
 const mqttClient = mqtt.connect("mqtt://broker.emqx.io:1883");
 
-// MQTT client connection event
 mqttClient.on("connect", () => {
   console.log("MQTT Connected");
 
@@ -41,7 +43,7 @@ mqttClient.on("connect", () => {
     }
   });
 
-  // Subscribe ke topik 'feeder/command'
+  // Subscribe ke topik 'feeder/status'
   mqttClient.subscribe("feeder/status", (err) => {
     if (err) {
       console.error("Failed to subscribe to topic: feeder/status");
@@ -49,6 +51,45 @@ mqttClient.on("connect", () => {
       console.log("Subscribed to topic: feeder/status");
     }
   });
+
+  // Subscribe ke topik 'feeder/kapasitas'
+  mqttClient.subscribe("feeder/kapasitas", (err) => {
+    if (err) {
+      console.error("Failed to subscribe to topic: feeder/kapasitas");
+    } else {
+      console.log("Subscribed to topic: feeder/kapasitas");
+    }
+  });
+});
+
+// Ketika menerima pesan dari topik MQTT
+mqttClient.on('message', (topic, message) => {
+  try {
+    const data = JSON.parse(message.toString());
+
+    // Tangani data kapasitas
+    if (topic === "feeder/kapasitas" && typeof data.kapasitas === 'number') {
+      kapasitasTerakhir = data.kapasitas;
+      console.log(`Kapasitas diperbarui: ${kapasitasTerakhir}%`);
+    }
+
+    // Anda bisa menambahkan logika untuk topik lainnya jika perlu
+    if (topic === "feeder/status") {
+      console.log("Status diterima: ", data);
+    }
+    
+  } catch (err) {
+    console.error('Gagal memproses pesan MQTT:', err);
+  }
+});
+
+// Endpoint untuk memberikan data kapasitas ke frontend
+app.get('/kapasitas', (req, res) => {
+  if (kapasitasTerakhir === null) {
+    return res.status(204).json({ message: 'Belum ada data kapasitas.' });
+  }
+
+  res.status(200).json({ kapasitas: kapasitasTerakhir });
 });
 
 // Mengambil data dari MQTT dan menyimpannya ke database
