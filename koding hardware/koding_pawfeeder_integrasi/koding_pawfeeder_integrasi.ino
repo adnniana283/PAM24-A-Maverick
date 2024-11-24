@@ -6,18 +6,18 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-#define TRIGGER_PIN_1  5
-#define ECHO_PIN_1     18
-#define TRIGGER_PIN_2  2
-#define ECHO_PIN_2     4
+//#define TRIGGER_PIN_1  5
+//#define ECHO_PIN_1     18
+#define TRIGGER_PIN_2  5
+#define ECHO_PIN_2     18
 #define MAX_DISTANCE   200
-#define SERVO_PIN      13
-#define JARAK_KUCING   10  // Jarak deteksi kucing (cm)
-#define JARAK_PENUH    5   // Jarak deteksi makanan penuh (cm)
+#define SERVO_PIN      4
+//#define JARAK_KUCING   10  // Jarak deteksi kucing (cm)
+#define JARAK_PENUH    1   // Jarak deteksi makanan penuh (cm)
 
 RTC_DS3231 rtc;
 Servo feederServo;
-NewPing sonar1(TRIGGER_PIN_1, ECHO_PIN_1, MAX_DISTANCE);
+//NewPing sonar1(TRIGGER_PIN_1, ECHO_PIN_1, MAX_DISTANCE);
 NewPing sonar2(TRIGGER_PIN_2, ECHO_PIN_2, MAX_DISTANCE);
 
 // WiFi credentials
@@ -31,6 +31,8 @@ const char* mqttTopic = "feeder/jadwal";
 
 bool feederAktif = true; // Status feeder (default aktif)
 const char* mqttStatusTopic = "feeder/status"; // Topic untuk mengatur status feeder
+const char* mqttKapasitasTopic = "feeder/kapasitas"; // Topik MQTT untuk kapasitas makanan
+
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -42,6 +44,22 @@ int kebutuhanKalori = 0;
 int idKucing = 0;
 int kaloriPerMakan = 0;
 float kaloriPerCm = 62.5;  // Misalnya, 62.5 kalori per 1 cm (500 kalori = 8 cm)
+
+float hitungPersentaseKapasitas() {
+  float jarakWadahKosong = 20.0; // Jarak jika wadah kosong (cm)
+  float jarakWadahPenuh = 1;   // Jarak jika wadah penuh (cm)
+
+  int jarakSaatIni = sonar2.ping_cm();
+  if (jarakSaatIni <= jarakWadahPenuh) {
+    return 100.0; // Wadah penuh
+  } else if (jarakSaatIni >= jarakWadahKosong) {
+    return 0.0;   // Wadah kosong
+  } else {
+    // Hitung persentase kapasitas dan bulatkan ke integer
+    return round(((jarakWadahKosong - jarakSaatIni) / (jarakWadahKosong - jarakWadahPenuh)) * 100.0);
+  }
+}
+
 
 // Menghitung jarak penuh berdasarkan kalori
 float hitungJarakBerdasarkanKalori(int kalori) {
@@ -75,18 +93,17 @@ void loop() {
   }
   mqttClient.loop();
 
-  // Cek input manual melalui serial
-//  if (Serial.available()) {
-//    handleManualInput();
-//  }
-
   if (feederAktif) {
-    // Skema 1: Berdasarkan jadwal
     checkScheduleAndFeed(); 
-    // Skema 2: Berdasarkan deteksi kucing
-    //detectCatAndFeed();     
   } else {
     Serial.println("Feeder sedang tidak aktif.");
+  }
+
+  // Kirim kapasitas makanan setiap 5 detik
+  static unsigned long lastSendTime = 0;
+  if (millis() - lastSendTime > 5000) {
+    kirimKapasitasMakanan();
+    lastSendTime = millis();
   }
 
   delay(1000); // Interval pengecekan
@@ -151,6 +168,18 @@ void handleFeederStatus(String message) {
   }
 }
 
+void kirimKapasitasMakanan() {
+  float kapasitas = hitungPersentaseKapasitas();
+  StaticJsonDocument<200> doc;
+  doc["kapasitas"] = kapasitas; // Kapasitas dalam persen
+
+  String output;
+  serializeJson(doc, output);
+
+  mqttClient.publish(mqttKapasitasTopic, output.c_str());
+  Serial.print("Kapasitas makanan dikirim: ");
+  Serial.println(output);
+}
 
 // Fungsi untuk menangani jadwal makan
 void handleFeedingSchedule(String message) {
@@ -298,7 +327,7 @@ void checkScheduleAndFeed() {
 
       Serial.println("Mangkuk penuh, Menutup pintu...");
       feederServo.write(0); // Tutup pintu
-      delay(5000); // Hindari eksekusi ulang dalam 1 menit
+      delay(60000); // Hindari eksekusi ulang dalam 1 menit
     }
   }
 }
