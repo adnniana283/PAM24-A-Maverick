@@ -19,6 +19,8 @@ class MyApp extends StatelessWidget {
         '/history': (context) => HistoryScreen(),
         '/submenu': (context) => SubmenuScreen(),
         '/penjadwalan_pawfeeder': (context) => PenjadwalanPawFeederScreen(),
+        '/discussion': (context) => DiscussionScreen(),
+        '/status': (context) => StatusScreen(),
       },
     );
   }
@@ -426,7 +428,9 @@ class SubmenuScreen extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.health_and_safety, color: Colors.pink),
             title: Text('Diskusi Kesehatan dan Makanan'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/discussion');
+            },
           ),
           ListTile(
             leading: Icon(Icons.article, color: Colors.pink),
@@ -469,30 +473,15 @@ class PenjadwalanPawFeederScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              decoration: InputDecoration(labelText: 'Nama Kucing'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Jenis Kucing'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Umur Kucing'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Gender'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Berat Kucing'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Kebutuhan Kalori'),
-            ),
-            SizedBox(height: 16),
             Text(
               'Penjadwalan (Opsional)',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
+            TextField(
+              decoration: InputDecoration(labelText: 'Kebutuhan Kalori'),
+            ),
+            SizedBox(height: 16),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(labelText: 'Jam Makan 1'),
               items: ['07:00', '12:00', '18:00']
@@ -519,6 +508,146 @@ class PenjadwalanPawFeederScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class DiscussionScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Diskusi'),
+        backgroundColor: Colors.pink[400], // Warna AppBar
+      ),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundImage: AssetImage('assets/cat1.png'),
+            ),
+            title: const Text('Kittenchu'),
+            subtitle: const Text(
+              'Kucing suka bermain tapi tidak bisa jalan, apa yang harus saya lakukan?',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundImage: AssetImage('assets/cat2.jpg'),
+            ),
+            title: const Text('BudiSukaMakan'),
+            subtitle: const Text(
+              'Sudah berapa lama bikin kucing susah makan? Apa solusinya ya?',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundImage: AssetImage('assets/cat3.jpg'),
+            ),
+            title: const Text('JaneMeowmeow'),
+            subtitle: const Text(
+              'Permisi, apa menyoo log saat kucingku menyoo, di sekitar area kelincik biasa?',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/status'); // Arahkan ke StatusScreen
+        },
+        backgroundColor: Colors.pink,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class StatusScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Status'),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'What\'s happening?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.pets,
+                      size: 80,
+                      color: Colors.pink,
+                    ),
+                    SizedBox(height: 16.0),
+                    Text(
+                      'Pet',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
