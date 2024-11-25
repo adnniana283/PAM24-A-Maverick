@@ -5,6 +5,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,6 +23,7 @@ class MyApp extends StatelessWidget {
         '/penjadwalan_pawfeeder': (context) => PenjadwalanPawFeederScreen(),
         '/discussion': (context) => DiscussionScreen(),
         '/status': (context) => StatusScreen(),
+        '/Artikel': (context) => ArtikelScreen(),
       },
     );
   }
@@ -28,7 +31,7 @@ class MyApp extends StatelessWidget {
 
 // Layar Login
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +51,10 @@ class LoginScreen extends StatelessWidget {
                   color: Colors.pink[100],
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Center(
+                child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(
                         Icons.pets,
                         size: 50,
@@ -134,7 +137,7 @@ class LoginScreen extends StatelessWidget {
 
 // Layar Sign Up
 class SignUpScreen extends StatelessWidget {
-  const SignUpScreen({Key? key}) : super(key: key);
+  const SignUpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +234,8 @@ class SignUpScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text('Sign Up', style: TextStyle(color: Colors.white)),
+                child: const Text('Sign Up',
+                    style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
@@ -244,6 +248,8 @@ class SignUpScreen extends StatelessWidget {
 // Layar Input Data Kucing
 
 class InputDataScreen extends StatelessWidget {
+  const InputDataScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -253,47 +259,47 @@ class InputDataScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Masukkan data diri kucing kesayangan Anda',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 20),
-            TextField(
+            const SizedBox(height: 20),
+            const TextField(
               decoration: InputDecoration(
                   labelText: 'Jenis Kucing', border: OutlineInputBorder()),
             ),
-            SizedBox(height: 10),
-            TextField(
+            const SizedBox(height: 10),
+            const TextField(
               decoration: InputDecoration(
                   labelText: 'Gender', border: OutlineInputBorder()),
             ),
-            SizedBox(height: 10),
-            TextField(
+            const SizedBox(height: 10),
+            const TextField(
               decoration: InputDecoration(
                   labelText: 'Usia Kucing', border: OutlineInputBorder()),
             ),
-            SizedBox(height: 10),
-            TextField(
+            const SizedBox(height: 10),
+            const TextField(
               decoration: InputDecoration(
                   labelText: 'Berat Kucing', border: OutlineInputBorder()),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
-              icon: Icon(Icons.camera_alt),
+              icon: const Icon(Icons.camera_alt),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
               onPressed: () {},
-              label: Text('Upload Foto Kucing',
+              label: const Text('Upload Foto Kucing',
                   style: TextStyle(color: Colors.white)),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
               onPressed: () {
                 Navigator.pushNamed(
                     context, '/home'); // Mengarahkan ke halaman HomePage
               },
-              child: Text('Next', style: TextStyle(color: Colors.white)),
+              child: const Text('Next', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -305,15 +311,17 @@ class InputDataScreen extends StatelessWidget {
 // Home Page
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.pink,
-        title: Text('PawFeeder'),
+        title: const Text('PawFeeder'),
         actions: [
           IconButton(
-            icon: Icon(Icons.menu),
+            icon: const Icon(Icons.menu),
             onPressed: () {
               Navigator.pushNamed(context, '/submenu');
             },
@@ -325,36 +333,36 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
+            const Card(
               child: ListTile(
                 title: Text('Status Tag Collar'),
                 subtitle: Text('Tersambung'),
                 trailing: Icon(Icons.check_circle, color: Colors.green),
               ),
             ),
-            SizedBox(height: 10),
-            Card(
+            const SizedBox(height: 10),
+            const Card(
               child: ListTile(
                 title: Text('Ketersediaan Makanan'),
                 subtitle: Text('90%'),
                 trailing: Icon(Icons.fastfood, color: Colors.orange),
               ),
             ),
-            SizedBox(height: 20),
-            Text('Riwayat Pemberian Makanan',
+            const SizedBox(height: 20),
+            const Text('Riwayat Pemberian Makanan',
                 style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ListTile(
-              leading: Icon(Icons.history),
-              title: Text('Kemarin: 08.00, 12.00, 17.00'),
+              leading: const Icon(Icons.history),
+              title: const Text('Kemarin: 08.00, 12.00, 17.00'),
               trailing: TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/history');
                 },
-                child: Text('Lihat Selengkapnya'),
+                child: const Text('Lihat Selengkapnya'),
               ),
             ),
-            Spacer(),
+            const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -362,12 +370,12 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {},
                   style:
                       ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: Text('ON'),
+                  child: const Text('ON'),
                 ),
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: Text('OFF'),
+                  child: const Text('OFF'),
                 ),
               ],
             ),
@@ -381,18 +389,20 @@ class HomeScreen extends StatelessWidget {
 // Halaman Riwayat Makanan
 
 class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.pink,
-        title: Text('Riwayat Pemberian Makanan'),
+        title: const Text('Riwayat Pemberian Makanan'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(20.0),
         itemCount: 5,
         itemBuilder: (context, index) {
-          return Card(
+          return const Card(
             child: ListTile(
               leading: Icon(Icons.calendar_today, color: Colors.pink),
               title: Text('19 September 2024'),
@@ -408,50 +418,56 @@ class HistoryScreen extends StatelessWidget {
 //Sub Menu
 
 class SubmenuScreen extends StatelessWidget {
+  const SubmenuScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.pink,
-        title: Text('Menu'),
+        title: const Text('Menu'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20.0),
         children: [
           ListTile(
-            leading: Icon(Icons.home, color: Colors.pink),
-            title: Text('HOME'),
+            leading: const Icon(Icons.home, color: Colors.pink),
+            title: const Text('HOME'),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: Icon(Icons.health_and_safety, color: Colors.pink),
-            title: Text('Diskusi Kesehatan dan Makanan'),
+            leading: const Icon(Icons.health_and_safety, color: Colors.pink),
+            title: const Text('Diskusi Kesehatan dan Makanan'),
             onTap: () {
               Navigator.pushNamed(context, '/discussion');
             },
           ),
           ListTile(
-            leading: Icon(Icons.article, color: Colors.pink),
-            title: Text('Artikel'),
+            leading: const Icon(Icons.article, color: Colors.pink),
+            title: const Text('Artikel'),
+            onTap: () {
+              Navigator.pushNamed(
+                  context, '/Artikel'); // Navigasi ke ArtikelScreen
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.pets, color: Colors.pink),
+            title: const Text('Adopsi Kucing'),
             onTap: () {},
           ),
           ListTile(
-            leading: Icon(Icons.pets, color: Colors.pink),
-            title: Text('Adopsi Kucing'),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: Icon(Icons.calendar_view_day_rounded, color: Colors.pink),
-            title: Text('Penjadwalan Pawfeeder'),
+            leading:
+                const Icon(Icons.calendar_view_day_rounded, color: Colors.pink),
+            title: const Text('Penjadwalan Pawfeeder'),
             onTap: () {
               Navigator.pushNamed(context, '/penjadwalan_pawfeeder');
             },
           ),
           ListTile(
-            leading: Icon(Icons.power_settings_new, color: Colors.red),
-            title: Text('OFF Paw Feeder'),
+            leading: const Icon(Icons.power_settings_new, color: Colors.red),
+            title: const Text('OFF Paw Feeder'),
             onTap: () {},
           ),
         ],
@@ -462,28 +478,30 @@ class SubmenuScreen extends StatelessWidget {
 
 // Penjadwalan Pawfeeder
 class PenjadwalanPawFeederScreen extends StatelessWidget {
+  const PenjadwalanPawFeederScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Penjadwalan Pawfeeder'),
+        title: const Text('Penjadwalan Pawfeeder'),
         backgroundColor: Colors.pink,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
+            const Text(
               'Penjadwalan (Opsional)',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
-            TextField(
+            const SizedBox(height: 8),
+            const TextField(
               decoration: InputDecoration(labelText: 'Kebutuhan Kalori'),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Jam Makan 1'),
+              decoration: const InputDecoration(labelText: 'Jam Makan 1'),
               items: ['07:00', '12:00', '18:00']
                   .map((time) =>
                       DropdownMenuItem(value: time, child: Text(time)))
@@ -491,7 +509,7 @@ class PenjadwalanPawFeederScreen extends StatelessWidget {
               onChanged: (value) {},
             ),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Jam Makan 2'),
+              decoration: const InputDecoration(labelText: 'Jam Makan 2'),
               items: ['07:00', '12:00', '18:00']
                   .map((time) =>
                       DropdownMenuItem(value: time, child: Text(time)))
@@ -499,7 +517,7 @@ class PenjadwalanPawFeederScreen extends StatelessWidget {
               onChanged: (value) {},
             ),
             DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Jam Makan 3'),
+              decoration: const InputDecoration(labelText: 'Jam Makan 3'),
               items: ['07:00', '12:00', '18:00']
                   .map((time) =>
                       DropdownMenuItem(value: time, child: Text(time)))
@@ -514,6 +532,8 @@ class PenjadwalanPawFeederScreen extends StatelessWidget {
 }
 
 class DiscussionScreen extends StatelessWidget {
+  const DiscussionScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -535,10 +555,6 @@ class DiscussionScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
-                  onPressed: () {},
-                ),
-                IconButton(
                   icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
                   onPressed: () {},
                 ),
@@ -557,10 +573,6 @@ class DiscussionScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
-                  onPressed: () {},
-                ),
-                IconButton(
                   icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
                   onPressed: () {},
                 ),
@@ -578,10 +590,6 @@ class DiscussionScreen extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: Icon(Icons.thumb_up, color: Colors.pink[400]),
-                  onPressed: () {},
-                ),
                 IconButton(
                   icon: Icon(Icons.mode_comment, color: Colors.redAccent[100]),
                   onPressed: () {},
@@ -603,17 +611,28 @@ class DiscussionScreen extends StatelessWidget {
 }
 
 class StatusScreen extends StatelessWidget {
+  const StatusScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Status'),
+        backgroundColor: Colors.pink,
+        title: const Text('PawFeeder'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
             child: Text(
               'What\'s happening?',
               style: TextStyle(
@@ -624,8 +643,8 @@ class StatusScreen extends StatelessWidget {
           ),
           Expanded(
             child: Container(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
+              padding: const EdgeInsets.all(16.0),
+              child: const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -648,6 +667,161 @@ class StatusScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/status'); // Arahkan ke StatusScreen
+        },
+        backgroundColor: Colors.pink,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class ArtikelScreen extends StatelessWidget {
+  const ArtikelScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, String>> articles = [
+      {
+        "title": "Ketahui 13 Jenis Kucing yang Paling Bersahabat",
+        "source": "Halodoc",
+        "date": "April 24",
+        "image": "https://via.placeholder.com/150"
+      },
+      {
+        "title": "7 Manfaat Memelihara Kucing di Rumah",
+        "source": "detikcom",
+        "date": "Aug 24",
+        "image": "https://via.placeholder.com/150"
+      },
+      {
+        "title": "Manfaat Memelihara Kucing dari Self Healing",
+        "source": "CNN",
+        "date": "Sep 26",
+        "image": "https://via.placeholder.com/150"
+      },
+      {
+        "title": "Perilaku dan Temperamen Kucing",
+        "source": "Kumparan",
+        "date": "Mei 24",
+        "image": "https://via.placeholder.com/150"
+      },
+      {
+        "title": "Dari Ragdoll Hingga Sphynx: 10 Ras Kucing Populer",
+        "source": "Kompas",
+        "date": "Jan 15",
+        "image": "https://via.placeholder.com/150"
+      },
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.pink,
+        title: const Text('Artikel'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Search Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: const [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Search 'Topic'",
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.search, color: Colors.pink),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // List of Articles
+            Expanded(
+              child: ListView.builder(
+                itemCount: articles.length,
+                itemBuilder: (context, index) {
+                  final article = articles[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Row(
+                      children: [
+                        // Article Image
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            article['image']!,
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Article Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                article['title']!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                article['source']!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                article['date']!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
