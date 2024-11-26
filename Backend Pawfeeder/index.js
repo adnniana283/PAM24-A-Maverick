@@ -1,12 +1,14 @@
 const express = require("express");
 const mysql = require("mysql2");
 const moment = require('moment');
+const cors = require("cors");
 const { body, validationResult } = require("express-validator");
 const mqtt = require("mqtt"); // Import MQTT library
 
 const app = express();
 const port = 3000;
 
+app.use(cors());
 app.use(express.json());
 
 // Database Connection
@@ -173,25 +175,51 @@ app.get("/pengguna", (req, res) => {
     });
   });
   
-  app.post("/pengguna", [
-    body("username").isString(),
-    body("email").isEmail(),
-    body("password_hash").isString(),
-    body("nama_lengkap").isString(),
-  ], (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+  app.post('/pengguna', (req, res) => {
+    const { username, email, password_hash, nama_lengkap } = req.body;
+  
+    // Check if this is a login request (only email and password are provided)
+    if (email && password_hash && !username && !nama_lengkap) {
+      const query = 'SELECT * FROM Pengguna WHERE email = ? AND password_hash = ?';
+      connection.query(query, [email, password_hash], (err, results) => {
+        if (err) {
+          return res.status(500).json({ message: 'Database error.', error: err });
+        }
+  
+        if (results.length === 0) {
+          return res.status(401).json({ message: 'Invalid email or password.' });
+        }
+  
+        // Login successful
+        const user = results[0];
+        return res.status(200).json({
+          id: user.id_pengguna,
+          name: user.nama_lengkap,
+          email: user.email,
+        });
+      });
+      return;
     }
   
-    const { username, email, password_hash, nama_lengkap } = req.body;
-    const query = 'INSERT INTO Pengguna (username, email, password_hash, nama_lengkap) VALUES (?, ?, ?, ?)';
-    connection.execute(query, [username, email, password_hash, nama_lengkap], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.status(201).json({ message: 'Pengguna added successfully', id_pengguna: results.insertId });
-    });
+    // If username and nama_lengkap are provided, it's a sign-up request
+    if (username && email && password_hash && nama_lengkap) {
+      const query =
+        'INSERT INTO Pengguna (username, email, password_hash, nama_lengkap) VALUES (?, ?, ?, ?)';
+      connection.query(
+        query,
+        [username, email, password_hash, nama_lengkap],
+        (err, results) => {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+          res
+            .status(201)
+            .json({ message: 'Pengguna added successfully', id_pengguna: results.insertId });
+        }
+      );
+    } else {
+      res.status(400).json({ message: 'Invalid request payload.' });
+    }
   });
   
   
@@ -253,14 +281,13 @@ app.get("/pengguna", (req, res) => {
       id_pengguna // Retrieve id_pengguna from the request
     } = req.body;
   
-    const health = tipe_kucing === 'adopsi' ? kesehatan : null;
-    const location = tipe_kucing === 'adopsi' ? lokasi_penampungan : null;
-    const description = tipe_kucing === 'adopsi' ? deskripsi : null;
-    const contact = tipe_kucing === 'adopsi' ? kontak_penampungan : null;
-    const status = tipe_kucing === 'adopsi' ? status_adopsi : null;
-  
-    const sensorId = id_sensor || null;
-  
+    const sensorId = id_sensor || null; // Replace undefined with null
+    const health = tipe_kucing === 'adopsi' ? kesehatan || null : null;
+    const location = tipe_kucing === 'adopsi' ? lokasi_penampungan || null : null;
+    const description = tipe_kucing === 'adopsi' ? deskripsi || null : null;
+    const contact = tipe_kucing === 'adopsi' ? kontak_penampungan || null : null;
+    const status = tipe_kucing === 'adopsi' ? status_adopsi || null : null;
+    
     const query = `
       INSERT INTO Kucing (nama, jenis, tipe_kucing, usia, berat, id_sensor, gender, kesehatan, lokasi_penampungan, deskripsi, kontak_penampungan, status_adopsi, foto_kucing, id_pengguna)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -279,7 +306,7 @@ app.get("/pengguna", (req, res) => {
       description,    // Will be null if not 'adopsi'
       contact,        // Will be null if not 'adopsi'
       status,
-      foto_kucing,
+      foto_kucing || null,
       id_pengguna     // Provide the actual user ID here
     ], (err, results) => {
       if (err) {
