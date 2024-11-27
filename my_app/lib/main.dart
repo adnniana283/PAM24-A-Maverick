@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -16,14 +17,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
-        '/input_data': (context) => InputDataScreen(),
-        '/home': (context) => HomeScreen(),
-        '/history': (context) => HistoryScreen(),
-        '/submenu': (context) => SubmenuScreen(),
-        '/penjadwalan_pawfeeder': (context) => PenjadwalanPawFeederScreen(),
-        '/discussion': (context) => DiscussionScreen(),
-        '/status': (context) => StatusScreen(),
-        '/Artikel': (context) => ArtikelScreen(),
+        '/input_data': (context) => const InputDataScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/history': (context) => const HistoryScreen(),
+        '/submenu': (context) => const SubmenuScreen(),
+        '/penjadwalan_pawfeeder': (context) =>
+            const PenjadwalanPawFeederScreen(),
+        '/discussion': (context) => const DiscussionScreen(),
+        '/status': (context) => const StatusScreen(),
+        '/artikel': (context) => const ArtikelScreen(),
+        '/adopsi_kucing': (context) => const AdoptionScreen(),
       },
     );
   }
@@ -449,13 +452,15 @@ class SubmenuScreen extends StatelessWidget {
             title: const Text('Artikel'),
             onTap: () {
               Navigator.pushNamed(
-                  context, '/Artikel'); // Navigasi ke ArtikelScreen
+                  context, '/artikel'); // Navigasi ke ArtikelScreen
             },
           ),
           ListTile(
             leading: const Icon(Icons.pets, color: Colors.pink),
             title: const Text('Adopsi Kucing'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/adopsi_kucing');
+            },
           ),
           ListTile(
             leading:
@@ -540,6 +545,14 @@ class DiscussionScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Diskusi'),
         backgroundColor: Colors.pink[400], // Warna AppBar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
+          ),
+        ],
       ),
       body: ListView(
         children: [
@@ -689,139 +702,194 @@ class ArtikelScreen extends StatelessWidget {
         "title": "Ketahui 13 Jenis Kucing yang Paling Bersahabat",
         "source": "Halodoc",
         "date": "April 24",
-        "image": "https://via.placeholder.com/150"
+        "image": "https://via.placeholder.com/150",
+        "content":
+            "Artikel ini membahas 13 jenis kucing yang memiliki sifat ramah dan bersahabat, cocok sebagai hewan peliharaan."
       },
       {
         "title": "7 Manfaat Memelihara Kucing di Rumah",
         "source": "detikcom",
         "date": "Aug 24",
-        "image": "https://via.placeholder.com/150"
+        "image": "https://via.placeholder.com/150",
+        "content":
+            "Memelihara kucing di rumah dapat memberikan banyak manfaat, termasuk mengurangi stres dan memberikan kebahagiaan."
       },
       {
         "title": "Manfaat Memelihara Kucing dari Self Healing",
         "source": "CNN",
         "date": "Sep 26",
-        "image": "https://via.placeholder.com/150"
+        "image": "https://via.placeholder.com/150",
+        "content":
+            "Artikel ini membahas bagaimana kucing dapat membantu manusia dalam proses penyembuhan diri atau self-healing."
       },
       {
         "title": "Perilaku dan Temperamen Kucing",
         "source": "Kumparan",
         "date": "Mei 24",
-        "image": "https://via.placeholder.com/150"
+        "image": "https://via.placeholder.com/150",
+        "content":
+            "Perilaku dan temperamen kucing bervariasi tergantung pada jenis dan cara mereka dibesarkan. Artikel ini mengulasnya secara detail."
       },
       {
         "title": "Dari Ragdoll Hingga Sphynx: 10 Ras Kucing Populer",
         "source": "Kompas",
         "date": "Jan 15",
-        "image": "https://via.placeholder.com/150"
+        "image": "https://via.placeholder.com/150",
+        "content":
+            "Kenali 10 ras kucing paling populer di dunia, mulai dari Ragdoll yang lembut hingga Sphynx yang unik."
       },
     ];
 
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Artikel Kucing'),
         backgroundColor: Colors.pink,
-        title: const Text('Artikel'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Navigator.pushNamed(context, '/submenu');
+      ),
+      body: ListView.builder(
+        itemCount: articles.length,
+        itemBuilder: (context, index) {
+          final article = articles[index];
+          return ListTile(
+            leading: Image.network(article['image']!),
+            title: Text(article['title']!),
+            subtitle: Text(article['source']!),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ArtikelDetailScreen(article: article),
+                ),
+              );
             },
-          ),
-        ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ArtikelDetailScreen extends StatelessWidget {
+  final Map<String, String> article;
+
+  const ArtikelDetailScreen({super.key, required this.article});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(article['title']!),
+        backgroundColor: Colors.pink,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search Bar
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: const [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Search 'Topic'",
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.search, color: Colors.pink),
-                ],
-              ),
+            Image.network(article['image']!),
+            const SizedBox(height: 16),
+            Text(
+              article['title']!,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Sumber: ${article['source']} - ${article['date']}",
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 16),
-            // List of Articles
             Expanded(
-              child: ListView.builder(
-                itemCount: articles.length,
-                itemBuilder: (context, index) {
-                  final article = articles[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Row(
-                      children: [
-                        // Article Image
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            article['image']!,
-                            height: 80,
-                            width: 80,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Article Details
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                article['title']!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                article['source']!,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                article['date']!,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              child: SingleChildScrollView(
+                child: Text(
+                  article['content']!,
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.pink,
+        onPressed: () {
+          final String shareText =
+              'Baca artikel menarik: ${article['title']}\n\n${article['content']}';
+          Share.share(shareText); // Pastikan package share_plus sudah diinstal
+        },
+        child: const Icon(Icons.share),
+      ),
+    );
+  }
+}
+
+class AdoptionScreen extends StatelessWidget {
+  const AdoptionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, String>> cats = [
+      {"image": "assets/cat1.png", "name": "Persia"},
+      {"image": "https://via.placeholder.com/150", "name": "Siamese"},
+      {"image": "https://via.placeholder.com/150", "name": "Bengal"},
+      {"image": "https://via.placeholder.com/150", "name": "Maine Coon"},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Adopsi Kucing'),
+        backgroundColor: Colors.pink,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: cats.length,
+        itemBuilder: (context, index) {
+          final cat = cats[index];
+          return GestureDetector(
+            onTap: () {
+              // Bisa tambahkan aksi untuk detail adopsi
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      cat['image']!,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    cat['name']!,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.pink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
