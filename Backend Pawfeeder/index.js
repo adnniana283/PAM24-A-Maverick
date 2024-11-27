@@ -4,6 +4,20 @@ const moment = require('moment');
 const cors = require("cors");
 const { body, validationResult } = require("express-validator");
 const mqtt = require("mqtt"); // Import MQTT library
+const multer = require('multer');
+const path = require('path');
+
+// Set up multer storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');  // Save uploaded images to 'uploads' directory
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));  // Create unique file name
+  }
+});
+
+const upload = multer({ storage: storage });
 
 const app = express();
 const port = 3000;
@@ -223,7 +237,8 @@ app.get("/pengguna", (req, res) => {
   });
   
   
-  app.post('/kucing', [
+  app.post('/kucing',  upload.single('foto_kucing'), [
+
     body("nama").isString(),
     body("jenis").isString(),
     body("tipe_kucing").isIn(["pengguna", "adopsi"]),
@@ -287,6 +302,9 @@ app.get("/pengguna", (req, res) => {
     const description = tipe_kucing === 'adopsi' ? deskripsi || null : null;
     const contact = tipe_kucing === 'adopsi' ? kontak_penampungan || null : null;
     const status = tipe_kucing === 'adopsi' ? status_adopsi || null : null;
+    // Handle missing or undefined fields
+    const fotoKucingPath = foto_kucing ? foto_kucing : null; // Ensure null if not provided
+
     
     const query = `
       INSERT INTO Kucing (nama, jenis, tipe_kucing, usia, berat, id_sensor, gender, kesehatan, lokasi_penampungan, deskripsi, kontak_penampungan, status_adopsi, foto_kucing, id_pengguna)
@@ -306,7 +324,7 @@ app.get("/pengguna", (req, res) => {
       description,    // Will be null if not 'adopsi'
       contact,        // Will be null if not 'adopsi'
       status,
-      foto_kucing || null,
+      fotoKucingPath,
       id_pengguna     // Provide the actual user ID here
     ], (err, results) => {
       if (err) {
@@ -317,23 +335,53 @@ app.get("/pengguna", (req, res) => {
   });
   
   
-  /** JADWAL PEMBERIAN MAKAN **/
   app.get("/jadwal-makan", (req, res) => {
-    const query = "SELECT * FROM JadwalPemberianMakan";
-    connection.query(query, (err, results) => {
+    // Jika ingin menyaring berdasarkan ID kucing, kamu bisa menggunakan parameter `id_kucing`
+    const idKucing = req.query.id_kucing;  // Ambil id_kucing dari query parameter
+  
+    let query = "SELECT * FROM JadwalPemberianMakan";
+    if (idKucing) {
+      query += " WHERE id_kucing = ?";
+    }
+  
+    // Jalankan query
+    connection.query(query, [idKucing], (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
+  
+      // Jika data ditemukan, formatkan dengan struktur yang lebih jelas
+      if (results.length > 0) {
+        // Misalnya, jika kamu ingin data dalam format seperti berikut:
+        // { "jadwal": [{ id_kucing: 1, waktu_makan: "07:00", berapa_kali_makan: 3, kebutuhan_kalori: 200 }, ...] }
+  
+        const formattedResults = results.map(item => ({
+          id_kucing: item.id_kucing,
+          waktu_makan: item.waktu_makan,
+          berapa_kali_makan: item.berapa_kali_makan,
+          kebutuhan_kalori: item.kebutuhan_kalori,
+        }));
+  
+        res.status(200).json({ jadwal: formattedResults });
+      } else {
+        res.status(404).json({ message: "Jadwal tidak ditemukan" });
+      }
+    });
+  });
+  
+  
+  app.get("/riwayat-makan", (req, res) => {
+    const query = "SELECT * FROM RiwayatPemberianMakan";
+    connection.query(query, (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      // Pastikan results tidak kosong
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'No data found' });
+      }
       res.status(200).json(results);
     });
   });
   
-  /** RIWAYAT PEMBERIAN MAKAN **/
-  app.get("/riwayat-makan", (req, res) => {
-    const query = "SELECT * FROM RiwayatPemberianMakan";
-    connection.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json(results);
-    });
-  });
   
 
   app.post('/jadwal-makan', [
@@ -409,114 +457,111 @@ app.get("/pengguna", (req, res) => {
 });
 
   
-  /** ARTIKEL KUCING **/
-  app.get("/artikel", (req, res) => {
-    const query = "SELECT * FROM ArtikelKucing";
-    connection.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json(results);
-    });
+// API untuk mengambil daftar artikel
+app.get("/artikel", (req, res) => {
+  const query = "SELECT * FROM ArtikelKucing ORDER BY tanggal_publikasi DESC"; // Mengurutkan berdasarkan tanggal terbaru
+  connection.execute(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200).json(results); // Mengirim daftar artikel
   });
+});
   
-  app.post(
-    "/artikel",
-    [
-      body("judul").isString().notEmpty(),
-      body("konten").isString().notEmpty(),
-      body("tanggal_publikasi").isISO8601(),
-      body("penulis").isString().notEmpty(),
-      body("foto_artikel").optional().isString(),
-    ],
-    (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-  
-      const { judul, konten, tanggal_publikasi, penulis, foto_artikel } =
-        req.body;
-      const query =
-        "INSERT INTO ArtikelKucing (judul, konten, tanggal_publikasi, penulis, foto_artikel) VALUES (?, ?, ?, ?, ?)";
-      connection.execute(
-        query,
-        [judul, konten, tanggal_publikasi, penulis, foto_artikel],
-        (err, results) => {
-          if (err) return res.status(500).json({ error: err.message });
-          res.status(201).json({ id_artikel: results.insertId });
-        }
-      );
+app.post("/artikel", upload.single('foto_artikel'), [
+  body("judul").isString().notEmpty(),
+  body("konten").isString().notEmpty(),
+  body("tanggal_publikasi").isISO8601(),
+  body("penulis").isString().notEmpty(),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { judul, konten, tanggal_publikasi, penulis } = req.body;
+  const foto_artikel = req.file ? req.file.path : null; // Get file path
+
+  const query = "INSERT INTO ArtikelKucing (judul, konten, tanggal_publikasi, penulis, foto_artikel) VALUES (?, ?, ?, ?, ?)";
+  connection.execute(
+    query,
+    [judul, konten, tanggal_publikasi, penulis, foto_artikel],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id_artikel: results.insertId });
     }
   );
+});
   
-  /** DISKUSI **/
+    // Mendapatkan list diskusi
   app.get("/diskusi", (req, res) => {
     const query = "SELECT * FROM Diskusi";
     connection.query(query, (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json(results);
+      res.status(200).json(results); // Mengembalikan data dalam format JSON
     });
   });
-  
-  app.post(
-    "/diskusi",
-    [
-      body("konten_topik").isString().notEmpty(),
-      body("waktu_post").isISO8601(),
-      body("id_pengguna").isInt(),
-    ],
-    (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-  
-      const { konten_topik, waktu_post, id_pengguna } = req.body;
-      const query =
-        "INSERT INTO Diskusi (konten_topik, waktu_post, id_pengguna) VALUES (?, ?, ?)";
-      connection.execute(
-        query,
-        [konten_topik, waktu_post, id_pengguna],
-        (err, results) => {
-          if (err) return res.status(500).json({ error: err.message });
-          res.status(201).json({ id_topik: results.insertId });
-        }
-      );
-    }
-  );
-  
-  /** BALASAN **/
-  app.get("/balasan", (req, res) => {
-    const query = "SELECT * FROM Balasan";
-    connection.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json(results);
-    });
-  });
-  
-  app.post('/balasan', [
-    body('id_topik').isInt(),
-    body('id_parent_balasan').optional().custom(value => {
-      if (value !== null && !Number.isInteger(value)) {
-        throw new Error('id_parent_balasan must be an integer or null');
-      }
-      return true; // Indicate success
-    }),
-    body('konten_balasan').isString().notEmpty(),
-    body('waktu_balasan').isDate(),
-    body('id_pengguna').isInt(),
+
+  // Menambahkan diskusi baru
+  app.post("/diskusi", [
+    body("konten_topik").isString().notEmpty(),
+    body("waktu_post").isISO8601(),
+    body("id_pengguna").isInt(),
   ], (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
+    const { konten_topik, waktu_post, id_pengguna } = req.body;
+    const query = "INSERT INTO Diskusi (konten_topik, waktu_post, id_pengguna) VALUES (?, ?, ?)";
+    connection.query(query, [konten_topik, waktu_post, id_pengguna], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id_topik: results.insertId });  // Mengembalikan ID topik yang baru dibuat
+    });
+  });
+
+  // Mendapatkan balasan untuk diskusi tertentu
+  app.get("/balasan", (req, res) => {
+    const query = "SELECT * FROM Balasan WHERE id_topik = ?";
+    const { id_topik } = req.query;
+    connection.query(query, [id_topik], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(200).json(results); // Mengembalikan list balasan
+    });
+  });
+
+  // Menambahkan balasan baru
+  app.post('/balasan', [
+    body('id_topik').isInt(), // Validasi id_topik
+    // Perubahan di backend untuk validasi id_parent_balasan
+    body('id_parent_balasan').optional().custom(value => {
+      if (value !== null && !Number.isInteger(value)) {
+        throw new Error('id_parent_balasan must be an integer or null');
+      }
+      return true;
+    }),
+    body('waktu_balasan').isISO8601().withMessage('Invalid ISO8601 format for waktu_balasan'),
+    body('id_pengguna').isInt(), // Validasi id_pengguna
+    
+  ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });  // Mengembalikan kesalahan jika validasi gagal
+    }
   
     const { id_topik, id_parent_balasan, konten_balasan, waktu_balasan, id_pengguna } = req.body;
-    const query = 'INSERT INTO balasan (id_topik, id_parent_balasan, konten_balasan, waktu_balasan, id_pengguna) VALUES (?, ?, ?, ?, ?)';
-    connection.execute(query, [id_topik, id_parent_balasan, konten_balasan, waktu_balasan, id_pengguna], (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+    
+    // Query untuk memasukkan data balasan
+        const query = 'INSERT INTO Balasan (id_topik, id_parent_balasan, konten_balasan, waktu_balasan, id_pengguna) VALUES (?, ?, ?, ?, ?)';
+    connection.query(query, [id_topik, id_parent_balasan, konten_balasan, waktu_balasan, id_pengguna], (err, results) => {
+      if (err) {
+        console.error('Error inserting balasan: ', err);
+        return res.status(500).json({ error: err.message });
+      }
       res.status(201).json({ id_balasan: results.insertId });
     });
   });
+  
+
 
   // Endpoint untuk mengirimkan perintah ke feeder
   app.post('/status', (req, res) => {
