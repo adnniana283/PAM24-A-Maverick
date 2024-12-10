@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // Import the image_picker package
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+const String ipAddress = '192.168.10.121';
+const String port = '3000';
 
 void main() {
   runApp(MyApp());
@@ -30,11 +35,11 @@ class MyApp extends StatelessWidget {
         '/discussion': (context) => DiscussionScreen(),
         '/status': (context) => StatusScreen(),
         '/Artikel': (context) => ArtikelScreen(),
+        '/adopsi_kucing': (context) => AdoptionScreen(),
       },
     );
   }
 }
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,7 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:3000/pengguna'), // Same endpoint as sign-up
+        Uri.parse(
+            'http://$ipAddress:$port/pengguna'), // Same endpoint as sign-up
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -88,7 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         // Navigate to the home screen or next screen
-        Navigator.pushNamed(context, '/input_data'); // Replace with your desired route
+        Navigator.pushNamed(
+            context, '/input_data'); // Replace with your desired route
       } else if (response.statusCode == 401) {
         setState(() {
           errorMessage = 'Invalid email or password.';
@@ -236,7 +243,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool isLoading = false;
   String errorMessage = '';
 
@@ -253,7 +261,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     // Validate inputs
-    if (name.isEmpty || username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       setState(() {
         errorMessage = 'All fields are required.';
       });
@@ -281,7 +293,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:3000/pengguna'),
+        Uri.parse('http://$ipAddress:$port/pengguna'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nama_lengkap': name,
@@ -295,10 +307,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Successfully added
         final responseData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Sign-up successful! ID: ${responseData['id_pengguna']}'),
+          content:
+              Text('Sign-up successful! ID: ${responseData['id_pengguna']}'),
           backgroundColor: Colors.green,
         ));
-        Navigator.pop(context); // Return to previous screen (e.g., login screen)
+        Navigator.pop(
+            context); // Return to previous screen (e.g., login screen)
       } else if (response.statusCode == 400) {
         final errors = jsonDecode(response.body)['errors'];
         setState(() {
@@ -427,9 +441,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-
 // Layar Input Data Kucing // disimpan ke database kucing (pengguna)
-
 
 class InputDataScreen extends StatefulWidget {
   const InputDataScreen({super.key});
@@ -446,7 +458,8 @@ class _InputDataScreenState extends State<InputDataScreen> {
   final TextEditingController _genderController = TextEditingController();
   String errorMessage = '';
   bool isLoading = false;
-  XFile? _pickedFile; // Updated to use XFile from image_picker
+  XFile? _pickedFile;
+  Uint8List? _webImage; // Tambahkan untuk menyimpan image bytes di web
 
   // Replace this with the actual user ID for the logged-in user
   final int idPengguna = 1;
@@ -456,15 +469,25 @@ class _InputDataScreenState extends State<InputDataScreen> {
 
     try {
       final XFile? pickedFile = await picker.pickImage(
-        source: ImageSource.gallery, // Allow user to pick an image from gallery
+        source: ImageSource.gallery,
         maxWidth: 800, // Resize the image width to a maximum of 800px
         maxHeight: 800, // Resize the image height to a maximum of 800px
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _pickedFile = pickedFile; // Store the selected image file
-        });
+        if (kIsWeb) {
+          // Untuk web, baca file sebagai bytes
+          final bytes = await pickedFile.readAsBytes();
+          setState(() {
+            _pickedFile = pickedFile;
+            _webImage = bytes;
+          });
+        } else {
+          setState(() {
+            _pickedFile = pickedFile;
+          });
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Image selected successfully')),
         );
@@ -484,7 +507,11 @@ class _InputDataScreenState extends State<InputDataScreen> {
     final gender = _genderController.text.trim();
 
     // Validate inputs
-    if (nama.isEmpty || jenis.isEmpty || usia.isEmpty || berat.isEmpty || gender.isEmpty) {
+    if (nama.isEmpty ||
+        jenis.isEmpty ||
+        usia.isEmpty ||
+        berat.isEmpty ||
+        gender.isEmpty) {
       setState(() {
         errorMessage = 'All fields are required.';
       });
@@ -514,7 +541,7 @@ class _InputDataScreenState extends State<InputDataScreen> {
       // Create a multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.9:3000/kucing'),
+        Uri.parse('http://$ipAddress:$port/kucing'),
       );
 
       request.fields['nama'] = nama;
@@ -526,10 +553,18 @@ class _InputDataScreenState extends State<InputDataScreen> {
       request.fields['id_pengguna'] = idPengguna.toString();
 
       // Attach the selected image
-      request.files.add(await http.MultipartFile.fromPath(
-        'foto_kucing', // Field name in the backend
-        _pickedFile!.path,
-      ));
+      if (kIsWeb) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'foto_kucing', // Field name in the backend
+          _webImage!,
+          filename: _pickedFile!.name,
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath(
+          'foto_kucing', // Field name in the backend
+          _pickedFile!.path,
+        ));
+      }
 
       final response = await request.send();
 
@@ -558,107 +593,127 @@ class _InputDataScreenState extends State<InputDataScreen> {
     }
   }
 
+  Future<void> skipToNextPage() async {
+    Navigator.pushNamed(context, '/home'); // Ganti dengan halaman yang sesuai
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.pink[50],
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Masukkan data diri kucing kesayangan Anda',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            if (errorMessage.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10.0),
-                child: Text(
-                  errorMessage,
-                  style: const TextStyle(color: Colors.red),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Masukkan data diri kucing kesayangan Anda',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              TextField(
+                controller: _namaController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Kucing',
+                  border: OutlineInputBorder(),
                 ),
               ),
-            TextField(
-              controller: _namaController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Kucing',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _jenisController,
+                decoration: const InputDecoration(
+                  labelText: 'Jenis Kucing',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _jenisController,
-              decoration: const InputDecoration(
-                labelText: 'Jenis Kucing',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _genderController,
+                decoration: const InputDecoration(
+                  labelText: 'Gender (jantan/betina)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _genderController,
-              decoration: const InputDecoration(
-                labelText: 'Gender (jantan/betina)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _usiaController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Usia Kucing (tahun)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _usiaController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Usia Kucing (tahun)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _beratController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Berat Kucing (kg)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _beratController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Berat Kucing (kg)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+                onPressed: pickImage,
+                label: const Text(
+                  'Upload Foto Kucing',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.camera_alt),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
-              onPressed: pickImage, // Trigger image picking
-              label: const Text(
-                'Upload Foto Kucing',
-                style: TextStyle(color: Colors.white),
+              const SizedBox(height: 10),
+              if (_pickedFile != null)
+                kIsWeb
+                    ? Image.memory(
+                        _webImage!,
+                        height: 150,
+                        width: 150,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(_pickedFile!.path),
+                        height: 150,
+                        width: 150,
+                        fit: BoxFit.cover,
+                      ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+                onPressed: isLoading ? null : submitData,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Simpan Data',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
-            ),
-            const SizedBox(height: 10),
-            if (_pickedFile != null)
-            Image.file(
-              File(_pickedFile!.path), // Convert XFile to File for mobile
-              height: 150,
-              width: 150,
-              fit: BoxFit.cover,
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
-              onPressed: isLoading ? null : submitData,
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Simpan Data',
-                      style: TextStyle(color: Colors.white),
-                    ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                onPressed: skipToNextPage,
+                child: const Text(
+                  'Skip',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
 
 //home
 
@@ -668,6 +723,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> riwayat = [];
   bool isLoading = true;
@@ -677,55 +733,56 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer; // Timer for polling
 
   // Async function to fetch data
-Future<void> getData() async {
-  try {
-    final response = await http.get(Uri.parse('http://192.168.1.9:3000/riwayat-makan'));
+  Future<void> getData() async {
+    try {
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      
-      // Sort data berdasarkan waktu_makan (tanggal terbaru di atas)
-      data.sort((a, b) {
-        DateTime aDate = DateTime.parse(a['waktu_makan']);
-        DateTime bDate = DateTime.parse(b['waktu_makan']);
-        return bDate.compareTo(aDate); // Mengurutkan dari yang terbaru
-      });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
+        // Sort data berdasarkan waktu_makan (tanggal terbaru di atas)
+        data.sort((a, b) {
+          DateTime aDate = DateTime.parse(a['waktu_makan']);
+          DateTime bDate = DateTime.parse(b['waktu_makan']);
+          return bDate.compareTo(aDate); // Mengurutkan dari yang terbaru
+        });
+
+        setState(() {
+          riwayat = data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
       setState(() {
-        riwayat = data;
         isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+        errorMessage = 'Failed to load data. Error: $e';
       });
     }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-      errorMessage = 'Failed to load data. Error: $e';
-    });
-  }
-}
-
-
-String formatTimestamp(String? timestamp) {
-  if (timestamp == null || timestamp.isEmpty) {
-    return 'Invalid Date'; // Jika null atau kosong, kembalikan teks yang menunjukkan error
   }
 
-  try {
-    final dateTime = DateTime.parse(timestamp); // Parse timestamp yang valid
-    final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
-    final formattedTime = DateFormat('HH:mm').format(dateTime); // Format waktu
-    return 'Tanggal: $formattedDate, Jam: $formattedTime';
-  } catch (e) {
-    return 'Invalid Date'; // Jika terjadi error saat parsing
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) {
+      return 'Invalid Date'; // Jika null atau kosong, kembalikan teks yang menunjukkan error
+    }
+
+    try {
+      final dateTime = DateTime.parse(timestamp); // Parse timestamp yang valid
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
+      final formattedTime =
+          DateFormat('HH:mm').format(dateTime); // Format waktu
+      return 'Tanggal: $formattedDate, Jam: $formattedTime';
+    } catch (e) {
+      return 'Invalid Date'; // Jika terjadi error saat parsing
+    }
   }
-}
-
-
 
   // Function to start polling for kapasitas every 5 seconds
   void startPolling() {
@@ -751,12 +808,14 @@ String formatTimestamp(String? timestamp) {
   // Async function to fetch kapasitas data from the server
   Future<void> getKapasitas() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.9:3000/kapasitas'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/kapasitas'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          kapasitas = data['kapasitas']?.toString() ?? 'Error fetching kapasitas'; // Safely handle null kapasitas
+          kapasitas = data['kapasitas']?.toString() ??
+              'Error fetching kapasitas'; // Safely handle null kapasitas
         });
       } else {
         setState(() {
@@ -774,7 +833,7 @@ String formatTimestamp(String? timestamp) {
   Future<void> postStatus(String status) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:3000/status'),
+        Uri.parse('http://$ipAddress:$port/status'),
         headers: {"Content-Type": "application/json"},
         body: json.encode({'status': status}),
       );
@@ -792,103 +851,104 @@ String formatTimestamp(String? timestamp) {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      backgroundColor: Colors.pink,
-      title: const Text('PawFeeder'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Navigator.pushNamed(context, '/submenu');
-          },
-        ),
-      ],
-    ),
-    body: Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status Tag Collar
-          const Card(
-            child: ListTile(
-              title: Text('Status Tag Collar'),
-              subtitle: Text('Tersambung'),
-              trailing: Icon(Icons.check_circle, color: Colors.green),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Ketersediaan Makanan
-          Card(
-            child: ListTile(
-              title: Text('Ketersediaan Makanan'),
-              subtitle: Text('$kapasitas%'), // Show kapasitas from polling
-              trailing: const Icon(Icons.fastfood, color: Colors.orange),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Riwayat Pemberian Makanan
-          const Text('Riwayat Pemberian Makanan', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-
-          // Menampilkan riwayat makanan yang terbaru
-          isLoading
-              ? const CircularProgressIndicator()
-              : errorMessage.isNotEmpty
-                  ? Text(errorMessage)
-                  : Column(
-                      children: [
-                        // Menampilkan 3 riwayat makanan terbaru
-                        for (var item in riwayat.take(3))
-                          ListTile(
-                            leading: const Icon(Icons.history),
-                            title: Text(formatTimestamp(item['waktu_makan'])),
-                          ),
-                        const SizedBox(height: 10),
-                        // Tombol untuk melihat selengkapnya
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/history');
-                          },
-                          child: const Text('Lihat Selengkapnya'),
-                        ),
-                      ],
-                    ),
-
-          const Spacer(),
-
-          // ON / OFF Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  postStatus('ON'); // Send ON status to the backend
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text('ON'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  postStatus('OFF'); // Send OFF status to the backend
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('OFF'),
-              ),
-            ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.pink,
+        title: const Text('PawFeeder'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
           ),
         ],
       ),
-    ),
-  );
-}
-}
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Tag Collar
+            const Card(
+              child: ListTile(
+                title: Text('Status Tag Collar'),
+                subtitle: Text('Tersambung'),
+                trailing: Icon(Icons.check_circle, color: Colors.green),
+              ),
+            ),
+            const SizedBox(height: 10),
 
+            // Ketersediaan Makanan
+            Card(
+              child: ListTile(
+                title: Text('Ketersediaan Makanan'),
+                subtitle: Text('$kapasitas%'), // Show kapasitas from polling
+                trailing: const Icon(Icons.fastfood, color: Colors.orange),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Riwayat Pemberian Makanan
+            const Text('Riwayat Pemberian Makanan',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            // Menampilkan riwayat makanan yang terbaru
+            isLoading
+                ? const CircularProgressIndicator()
+                : errorMessage.isNotEmpty
+                    ? Text(errorMessage)
+                    : Column(
+                        children: [
+                          // Menampilkan 3 riwayat makanan terbaru
+                          for (var item in riwayat.take(3))
+                            ListTile(
+                              leading: const Icon(Icons.history),
+                              title: Text(formatTimestamp(item['waktu_makan'])),
+                            ),
+                          const SizedBox(height: 10),
+                          // Tombol untuk melihat selengkapnya
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/history');
+                            },
+                            child: const Text('Lihat Selengkapnya'),
+                          ),
+                        ],
+                      ),
+
+            const Spacer(),
+
+            // ON / OFF Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    postStatus('ON'); // Send ON status to the backend
+                  },
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: const Text('ON'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    postStatus('OFF'); // Send OFF status to the backend
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('OFF'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // Halaman Riwayat Makanan // beri api untuk backend app get riwayat pemberian makan
 
@@ -907,7 +967,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // Async function to fetch data
   Future<void> getData() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.9:3000/riwayat-makan'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -926,7 +987,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -941,7 +1003,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String formatTimestamp(String timestamp) {
     try {
       final dateTime = DateTime.parse(timestamp); // Parse the ISO8601 string
-      final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format date
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format date
       final formattedTime = DateFormat('HH:mm').format(dateTime); // Format time
       return 'Tanggal: $formattedDate, Jam: $formattedTime';
     } catch (e) {
@@ -965,7 +1028,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
+              ? Center(
+                  child:
+                      Text(errorMessage, style: TextStyle(color: Colors.red)))
               : ListView.builder(
                   padding: const EdgeInsets.all(20.0),
                   itemCount: riwayat.length,
@@ -974,7 +1039,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                     // Ensure that data is cast to String if needed
                     final waktuMakan = user['waktu_makan']?.toString() ?? 'N/A';
-                    final jumlahPemberian = user['jumlah_pemberian']?.toString() ?? 'N/A';
+                    final jumlahPemberian =
+                        user['jumlah_pemberian']?.toString() ?? 'N/A';
 
                     // Format the timestamp
                     final formattedWaktuMakan = formatTimestamp(waktuMakan);
@@ -983,7 +1049,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: ListTile(
                         leading: Icon(Icons.calendar_today, color: Colors.pink),
                         title: Text(formattedWaktuMakan),
-                        subtitle: Text('Jumlah pemberian: $jumlahPemberian kalori'),
+                        subtitle:
+                            Text('Jumlah pemberian: $jumlahPemberian kalori'),
                       ),
                     );
                   },
@@ -991,9 +1058,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
-
-
-//Sub Menu
 
 class SubmenuScreen extends StatelessWidget {
   const SubmenuScreen({super.key});
@@ -1033,7 +1097,9 @@ class SubmenuScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.pets, color: Colors.pink),
             title: const Text('Adopsi Kucing'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/adopsi_kucing');
+            },
           ),
           ListTile(
             leading:
@@ -1045,12 +1111,19 @@ class SubmenuScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.power_settings_new, color: Colors.red),
-            title: const Text('OFF Paw Feeder'),
-            onTap: () {},
+            title: const Text('Log out'),
+            onTap: () {
+              _logout(context); // Panggil fungsi logout dengan context
+            },
           ),
         ],
       ),
     );
+  }
+
+  void _logout(BuildContext context) {
+    // Fungsi untuk logout dan kembali ke halaman login
+    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
   }
 }
 
@@ -1066,7 +1139,8 @@ class PenjadwalanPawFeederScreen extends StatefulWidget {
 class _PenjadwalanPawFeederScreenState
     extends State<PenjadwalanPawFeederScreen> {
   dynamic jadwal;
-  bool isLoading = false; // Start with false, since the app is not loading initially
+  bool isLoading =
+      false; // Start with false, since the app is not loading initially
   bool isSuccess = false; // Add a success flag to show successful message
   String errorMessage = '';
   String idKucing = ''; // Variable for the id_kucing
@@ -1087,15 +1161,15 @@ class _PenjadwalanPawFeederScreenState
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:3000/jadwal-makan'),
+        Uri.parse('http://$ipAddress:$port/jadwal-makan'),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           'id_kucing': idKucing,
           'waktu_makan': waktuMakan,
-          'berapa_kali_makan': waktuMakan.length, // Number of feedings based on selected times
-          'kebutuhan_kalori': kebutuhanKalori.isEmpty
-              ? null
-              : int.parse(kebutuhanKalori),
+          'berapa_kali_makan':
+              waktuMakan.length, // Number of feedings based on selected times
+          'kebutuhan_kalori':
+              kebutuhanKalori.isEmpty ? null : int.parse(kebutuhanKalori),
         }),
       );
 
@@ -1128,7 +1202,8 @@ class _PenjadwalanPawFeederScreenState
     String time = jamController.text;
     if (time.isNotEmpty && !waktuMakan.contains(time)) {
       setState(() {
-        waktuMakan.add(time); // Add the time to the list if it's not already present
+        waktuMakan
+            .add(time); // Add the time to the list if it's not already present
       });
       jamController.clear(); // Clear the input field after adding the time
     }
@@ -1170,9 +1245,11 @@ class _PenjadwalanPawFeederScreenState
             const SizedBox(height: 16),
             TextField(
               controller: jamController,
-              decoration: const InputDecoration(labelText: 'Masukkan Jam Makan'),
+              decoration:
+                  const InputDecoration(labelText: 'Masukkan Jam Makan'),
               keyboardType: TextInputType.number,
-              onSubmitted: (_) => addTimeToList(), // Add time when user presses enter
+              onSubmitted: (_) =>
+                  addTimeToList(), // Add time when user presses enter
             ),
             ElevatedButton(
               onPressed: addTimeToList,
@@ -1180,7 +1257,8 @@ class _PenjadwalanPawFeederScreenState
             ),
             const SizedBox(height: 16),
             Text('Jam Makan yang Dipilih:'),
-            for (var time in waktuMakan) Text(time), // Display all selected feeding times
+            for (var time in waktuMakan)
+              Text(time), // Display all selected feeding times
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: postData,
@@ -1194,15 +1272,15 @@ class _PenjadwalanPawFeederScreenState
                 style: TextStyle(color: Colors.green),
               ) // Show success message when data is successfully saved
             else if (errorMessage.isNotEmpty)
-              Text(errorMessage, style: const TextStyle(color: Colors.red)) // Show error message if any
+              Text(errorMessage,
+                  style: const TextStyle(
+                      color: Colors.red)) // Show error message if any
           ],
         ),
       ),
     );
   }
 }
-
-
 
 //diskusi
 class DiscussionScreen extends StatefulWidget {
@@ -1221,17 +1299,20 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   // Function to fetch discussions (diskusi)
   Future<void> getDiskusi() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.9:3000/diskusi'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/diskusi'));
 
       if (response.statusCode == 200) {
         setState(() {
-          diskusi = json.decode(response.body); // Fetching the list of discussions
+          diskusi =
+              json.decode(response.body); // Fetching the list of discussions
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -1243,14 +1324,15 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   // Function to post a reply (balasan)
-  Future<void> postBalasan(int idTopik, String kontenBalasan, int idPengguna) async {
+  Future<void> postBalasan(
+      int idTopik, String kontenBalasan, int idPengguna) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:3000/balasan'),
+        Uri.parse('http://$ipAddress:$port/balasan'),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           'id_topik': idTopik,
-          'id_parent_balasan': null,  // Assuming no parent response for now
+          'id_parent_balasan': null, // Assuming no parent response for now
           'konten_balasan': kontenBalasan,
           'waktu_balasan': DateTime.now().toIso8601String(),
           'id_pengguna': idPengguna,
@@ -1259,7 +1341,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
       if (response.statusCode == 201) {
         print('Balasan berhasil disimpan');
-        getDiskusi();  // Re-fetch diskusi to update the list
+        getDiskusi(); // Re-fetch diskusi to update the list
       } else {
         print('Gagal menyimpan balasan: ${response.statusCode}');
       }
@@ -1271,7 +1353,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   @override
   void initState() {
     super.initState();
-    getDiskusi();  // Fetch the discussions when the screen loads
+    getDiskusi(); // Fetch the discussions when the screen loads
   }
 
   @override
@@ -1313,7 +1395,9 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                                   onPressed: () {
                                     if (_balasanController.text.isNotEmpty) {
                                       postBalasan(
-                                          item['id_topik'], _balasanController.text, 1);  // 1 is user ID
+                                          item['id_topik'],
+                                          _balasanController.text,
+                                          1); // 1 is user ID
                                       Navigator.pop(context);
                                     }
                                   },
@@ -1330,9 +1414,10 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           // Navigate to StatusScreen and await for the result
-          bool shouldRefresh = await Navigator.pushNamed(context, '/status') as bool;
+          bool shouldRefresh =
+              await Navigator.pushNamed(context, '/status') as bool;
           if (shouldRefresh) {
-            getDiskusi();  // Refresh the discussion list if new discussion was posted
+            getDiskusi(); // Refresh the discussion list if new discussion was posted
           }
         },
         backgroundColor: Colors.pink,
@@ -1341,7 +1426,6 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     );
   }
 }
-
 
 //status
 class StatusScreen extends StatefulWidget {
@@ -1358,29 +1442,29 @@ class _StatusScreenState extends State<StatusScreen> {
 
   // Fungsi untuk mengambil status (diskusi)
   // Function to post a discussion
-Future<void> postDiskusi(String kontenDiskusi) async {
-  try {
-    final response = await http.post(
-      Uri.parse('http://192.168.1.9:3000/diskusi'),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({
-        'konten_topik': kontenDiskusi,
-        'waktu_post': DateTime.now().toIso8601String(),
-        'id_pengguna': 1, // Assuming user id is 1, change accordingly
-      }),
-    );
+  Future<void> postDiskusi(String kontenDiskusi) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ipAddress:$port/diskusi'),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          'konten_topik': kontenDiskusi,
+          'waktu_post': DateTime.now().toIso8601String(),
+          'id_pengguna': 1, // Assuming user id is 1, change accordingly
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      print('Diskusi berhasil disimpan');
-      Navigator.pop(context, true);  // Go back to DiskusiScreen and pass 'true' to refresh the diskusi list
-    } else {
-      print('Gagal menyimpan diskusi: ${response.statusCode}');
+      if (response.statusCode == 201) {
+        print('Diskusi berhasil disimpan');
+        Navigator.pop(context,
+            true); // Go back to DiskusiScreen and pass 'true' to refresh the diskusi list
+      } else {
+        print('Gagal menyimpan diskusi: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Terjadi kesalahan: $e');
     }
-  } catch (e) {
-    print('Terjadi kesalahan: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -1421,25 +1505,26 @@ Future<void> postDiskusi(String kontenDiskusi) async {
             ),
           ),
           Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: ElevatedButton(
-            onPressed: () {
-              if (_kontenController.text.isNotEmpty) {
-                postDiskusi(_kontenController.text);  // Kirim diskusi
-              }
-            },
-            child: Text('Post Diskusi'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pink, // Use backgroundColor instead of primary
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: ElevatedButton(
+              onPressed: () {
+                if (_kontenController.text.isNotEmpty) {
+                  postDiskusi(_kontenController.text); // Kirim diskusi
+                }
+              },
+              child: Text('Post Diskusi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Colors.pink, // Use backgroundColor instead of primary
+              ),
             ),
           ),
-        ),
         ],
       ),
     );
   }
 }
-
 
 // layar artikel // beri api untuk backend app get dari database artikel
 class ArtikelScreen extends StatefulWidget {
@@ -1457,7 +1542,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
   // Function to fetch articles from the backend
   Future<void> getArtikel() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.9:3000/artikel'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/artikel'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -1467,7 +1553,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -1537,7 +1624,9 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : errorMessage.isNotEmpty
-                      ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
+                      ? Center(
+                          child: Text(errorMessage,
+                              style: TextStyle(color: Colors.red)))
                       : ListView.builder(
                           itemCount: artikel.length,
                           itemBuilder: (context, index) {
@@ -1565,7 +1654,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
                                   // Article Details
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           article['judul']!,
@@ -1600,6 +1690,89 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+//adopsi
+class AdoptionScreen extends StatelessWidget {
+  const AdoptionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, String>> cats = [
+      {"image": "assets/cat1.png", "name": "Persia"},
+      {"image": "https://via.placeholder.com/150", "name": "Siamese"},
+      {"image": "https://via.placeholder.com/150", "name": "Bengal"},
+      {"image": "https://via.placeholder.com/150", "name": "Maine Coon"},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Adopsi Kucing'),
+        backgroundColor: Colors.pink,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
+          ),
+        ],
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: cats.length,
+        itemBuilder: (context, index) {
+          final cat = cats[index];
+          return GestureDetector(
+            onTap: () {
+              // Bisa tambahkan aksi untuk detail adopsi
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      cat['image']!,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    cat['name']!,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.pink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
