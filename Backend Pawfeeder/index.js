@@ -369,7 +369,7 @@ app.get("/pengguna", (req, res) => {
   
   
   app.get("/riwayat-makan", (req, res) => {
-    const query = "SELECT * FROM RiwayatPemberianMakan";
+    const query = "SELECT id_riwayat, id_kucing, CONVERT_TZ(waktu_makan, '+00:00', '+07:00') AS waktu_makan, jumlah_pemberian FROM RiwayatPemberianMakan";
     connection.query(query, (err, results) => {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -380,7 +380,7 @@ app.get("/pengguna", (req, res) => {
       }
       res.status(200).json(results);
     });
-  });
+  });  
   
   
 
@@ -492,13 +492,52 @@ app.post("/artikel", upload.single('foto_artikel'), [
 });
   
     // Mendapatkan list diskusi
-  app.get("/diskusi", (req, res) => {
-    const query = "SELECT * FROM Diskusi";
-    connection.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json(results); // Mengembalikan data dalam format JSON
+    app.get("/diskusi", (req, res) => {
+      const query = `
+        SELECT 
+          t.id_topik, 
+          t.konten_topik, 
+          t.waktu_post, 
+          b.id_balasan, 
+          b.konten_balasan, 
+          b.waktu_balasan,
+          b.id_pengguna
+        FROM Diskusi t
+        LEFT JOIN Balasan b ON t.id_topik = b.id_topik
+        ORDER BY t.waktu_post ASC, b.waktu_balasan ASC;
+      `;
+    
+      connection.query(query, (err, results) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+    
+        const diskusi = {};
+        results.forEach((row) => {
+          const idTopik = row.id_topik;
+          if (!diskusi[idTopik]) {
+            diskusi[idTopik] = {
+              id_topik: row.id_topik,
+              konten_topik: row.konten_topik,
+              waktu_post: row.waktu_post,
+              balasan: [],
+            };
+          }
+    
+          if (row.id_balasan) {
+            diskusi[idTopik].balasan.push({
+              id_balasan: row.id_balasan,
+              konten_balasan: row.konten_balasan,
+              waktu_balasan: row.waktu_balasan,
+              id_pengguna: row.id_pengguna,
+            });
+          }
+        });
+    
+        res.status(200).json(Object.values(diskusi)); // Mengembalikan semua diskusi beserta balasan
+      });
     });
-  });
+    
 
   // Menambahkan diskusi baru
   app.post("/diskusi", [
