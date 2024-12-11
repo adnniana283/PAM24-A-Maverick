@@ -29,7 +29,7 @@ const char* mqttServer = "broker.emqx.io";
 const int mqttPort = 1883;
 const char* mqttTopic = "feeder/jadwal";
 
-bool feederAktif = true; // Status feeder (default aktif)
+bool feederAktif = false; // Status feeder (default mati)
 const char* mqttStatusTopic = "feeder/status"; // Topic untuk mengatur status feeder
 const char* mqttKapasitasTopic = "feeder/kapasitas"; // Topik MQTT untuk kapasitas makanan
 
@@ -43,27 +43,35 @@ int jadwalMenit[5];
 int kebutuhanKalori = 0;
 int idKucing = 0;
 int kaloriPerMakan = 0;
-float kaloriPerCm = 62.5;  // Misalnya, 62.5 kalori per 1 cm (500 kalori = 8 cm)
+float kaloriPerCm = 32;  // Misalnya, 32 kalori per 1 cm (asumsi kapasitas petuh jika 600 kalori)
 
 float hitungPersentaseKapasitas() {
-  float jarakWadahKosong = 20.0; // Jarak jika wadah kosong (cm)
-  float jarakWadahPenuh = 1;   // Jarak jika wadah penuh (cm)
-
-  int jarakSaatIni = sonar2.ping_cm();
+  float jarakWadahKosong = 20.0;  // Jarak maksimum (kosong)
+  float jarakWadahPenuh = 1.0;    // Jarak minimum (penuh)
+  
+  int jarakSaatIni = sonar2.ping_cm();  // Membaca jarak dari sensor
+  
   if (jarakSaatIni <= jarakWadahPenuh) {
-    return 100.0; // Wadah penuh
+    return 100;  // Wadah penuh
   } else if (jarakSaatIni >= jarakWadahKosong) {
-    return 0.0;   // Wadah kosong
+    return 0;    // Wadah kosong
   } else {
-    // Hitung persentase kapasitas dan bulatkan ke integer
-    return round(((jarakWadahKosong - jarakSaatIni) / (jarakWadahKosong - jarakWadahPenuh)) * 100.0);
+    // Hitung persentase kapasitas (dengan presisi)
+    float kapasitas = ((jarakWadahKosong - jarakSaatIni) / 
+                      (jarakWadahKosong - jarakWadahPenuh)) * 100.0;
+    return round(kapasitas); // Bulatkan ke bilangan bulat
   }
 }
 
 
+
 // Menghitung jarak penuh berdasarkan kalori
 float hitungJarakBerdasarkanKalori(int kalori) {
-  return kalori / kaloriPerCm;
+  float jarakTarget = 20 - (kalori / kaloriPerCm); // Jarak berkurang seiring bertambahnya makanan
+  if (jarakTarget < 1) {
+    return 1; // Batas minimal jarak
+  }
+  return jarakTarget;
 }
 
 void setup() {
@@ -93,11 +101,9 @@ void loop() {
   }
   mqttClient.loop();
 
-  if (feederAktif) {
-    checkScheduleAndFeed(); 
-  } else {
-    Serial.println("Feeder sedang tidak aktif.");
-  }
+  checkFeederStatus();
+
+  checkScheduleAndFeed(); 
 
   // Kirim kapasitas makanan setiap 5 detik
   static unsigned long lastSendTime = 0;
@@ -295,7 +301,23 @@ void handleFeedingSchedule(String message) {
 //  Serial.println(output);
 //}
 
-// Skema 1: Cek jadwal makan
+//Skema 1: pengisian manual
+void checkFeederStatus() {  
+  if (feederAktif) {
+    Serial.println("Feeder aktif. Memulai pengisian makanan...");
+    feederServo.write(90); // Membuka pintu untuk mengisi makanan
+    delay(1000);  // Tunggu agar servo bergerak dengan lancar
+  }
+  else {
+    Serial.println("Feeder dimatikan. Menutup pintu...");
+    feederServo.write(0); // Menutup pintu
+    delay(1000);  // Tunggu agar servo bergerak dengan lancar
+  }
+}
+
+
+
+// Skema 2: Cek jadwal makan
 void checkScheduleAndFeed() {
   DateTime now = rtc.now();
   Serial.print("Waktu saat ini: ");
