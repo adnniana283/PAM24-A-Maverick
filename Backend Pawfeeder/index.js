@@ -333,6 +333,33 @@ app.get("/pengguna", (req, res) => {
       res.status(201).json({ message: 'Kucing berhasil ditambahkan', data: results });
     });
   });
+
+  app.get('/kucing', (req, res) => {
+    // Query to fetch all records from the Kucing table
+    const query = 'SELECT * FROM Kucing';
+  
+    // Execute query to fetch all data
+    connection.execute(query, (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(200).json({ data: results });
+    });
+  });
+  
+  app.get('/adopsi', (req, res) => {
+    // Query to fetch records from the Kucing table where tipe_kucing is 'adopsi'
+    const query = 'SELECT * FROM Kucing WHERE tipe_kucing = "adopsi"';
+  
+    // Execute query to fetch filtered data
+    connection.execute(query, (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(200).json({ data: results });
+    });
+  });
+  
   
   
   app.get("/jadwal-makan", (req, res) => {
