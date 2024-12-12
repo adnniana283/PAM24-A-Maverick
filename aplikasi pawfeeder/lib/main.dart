@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -8,7 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-const String ipAddress = '192.168.51.240';
+const String ipAddress = '192.168.25.240';
 const String port = '3000';
 
 void main() {
@@ -40,7 +40,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,7 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://$ipAddress:$port/pengguna'), // Same endpoint as sign-up
+        Uri.parse(
+            'http://$ipAddress:$port/pengguna'), // Same endpoint as sign-up
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -94,7 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         // Navigate to the home screen or next screen
-        Navigator.pushNamed(context, '/input_data'); // Replace with your desired route
+        Navigator.pushNamed(
+            context, '/input_data'); // Replace with your desired route
       } else if (response.statusCode == 401) {
         setState(() {
           errorMessage = 'Invalid email or password.';
@@ -126,35 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo
-              Container(
-                height: 150,
-                width: 150,
-                decoration: BoxDecoration(
-                  color: Colors.pink[100],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.pets,
-                        size: 50,
-                        color: Colors.white,
-                      ),
-                      Text(
-                        "Pawfeeder",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              Image.asset(
+                'lib/assets/logo.png',
+                width: 200, // Atur lebar sesuai kebutuhan
+                height: 200, // Atur tinggi sesuai kebutuhan
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 16), // Spasi antara logo dan teks
               // Error Message
               if (errorMessage.isNotEmpty)
                 Padding(
@@ -242,7 +220,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool isLoading = false;
   String errorMessage = '';
 
@@ -259,7 +238,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     // Validate inputs
-    if (name.isEmpty || username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       setState(() {
         errorMessage = 'All fields are required.';
       });
@@ -301,10 +284,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Successfully added
         final responseData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Sign-up successful! ID: ${responseData['id_pengguna']}'),
+          content:
+              Text('Sign-up successful! ID: ${responseData['id_pengguna']}'),
           backgroundColor: Colors.green,
         ));
-        Navigator.pop(context); // Return to previous screen (e.g., login screen)
+        Navigator.pop(
+            context); // Return to previous screen (e.g., login screen)
       } else if (response.statusCode == 400) {
         final errors = jsonDecode(response.body)['errors'];
         setState(() {
@@ -433,7 +418,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-
 // Layar Input Data Kucing // disimpan ke database kucing (pengguna)
 
 class InputDataScreen extends StatefulWidget {
@@ -500,7 +484,11 @@ class _InputDataScreenState extends State<InputDataScreen> {
     final gender = _genderController.text.trim();
 
     // Validate inputs
-    if (nama.isEmpty || jenis.isEmpty || usia.isEmpty || berat.isEmpty || gender.isEmpty) {
+    if (nama.isEmpty ||
+        jenis.isEmpty ||
+        usia.isEmpty ||
+        berat.isEmpty ||
+        gender.isEmpty) {
       setState(() {
         errorMessage = 'All fields are required.';
       });
@@ -530,7 +518,7 @@ class _InputDataScreenState extends State<InputDataScreen> {
       // Create a multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://$ipAddress:$port/kucing'),
+        Uri.parse('http://$ipAddress:$port/kucing'), //ux
       );
 
       request.fields['nama'] = nama;
@@ -704,8 +692,6 @@ class _InputDataScreenState extends State<InputDataScreen> {
   }
 }
 
-
-
 //home
 
 class HomeScreen extends StatefulWidget {
@@ -714,6 +700,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> riwayat = [];
   bool isLoading = true;
@@ -723,55 +710,56 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer; // Timer for polling
 
   // Async function to fetch data
-Future<void> getData() async {
-  try {
-    final response = await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
+  Future<void> getData() async {
+    try {
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      
-      // Sort data berdasarkan waktu_makan (tanggal terbaru di atas)
-      data.sort((a, b) {
-        DateTime aDate = DateTime.parse(a['waktu_makan']);
-        DateTime bDate = DateTime.parse(b['waktu_makan']);
-        return bDate.compareTo(aDate); // Mengurutkan dari yang terbaru
-      });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
+        // Sort data berdasarkan waktu_makan (tanggal terbaru di atas)
+        data.sort((a, b) {
+          DateTime aDate = DateTime.parse(a['waktu_makan']);
+          DateTime bDate = DateTime.parse(b['waktu_makan']);
+          return bDate.compareTo(aDate); // Mengurutkan dari yang terbaru
+        });
+
+        setState(() {
+          riwayat = data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
       setState(() {
-        riwayat = data;
         isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+        errorMessage = 'Failed to load data. Error: $e';
       });
     }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-      errorMessage = 'Failed to load data. Error: $e';
-    });
-  }
-}
-
-
-String formatTimestamp(String? timestamp) {
-  if (timestamp == null || timestamp.isEmpty) {
-    return 'Invalid Date'; // Jika null atau kosong, kembalikan teks yang menunjukkan error
   }
 
-  try {
-    final dateTime = DateTime.parse(timestamp); // Parse timestamp yang valid
-    final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
-    final formattedTime = DateFormat('HH:mm').format(dateTime); // Format waktu
-    return 'Tanggal: $formattedDate, Jam: $formattedTime';
-  } catch (e) {
-    return 'Invalid Date'; // Jika terjadi error saat parsing
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) {
+      return 'Invalid Date'; // Jika null atau kosong, kembalikan teks yang menunjukkan error
+    }
+
+    try {
+      final dateTime = DateTime.parse(timestamp); // Parse timestamp yang valid
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
+      final formattedTime =
+          DateFormat('HH:mm').format(dateTime); // Format waktu
+      return 'Tanggal: $formattedDate, Jam: $formattedTime';
+    } catch (e) {
+      return 'Invalid Date'; // Jika terjadi error saat parsing
+    }
   }
-}
-
-
 
   // Function to start polling for kapasitas every 5 seconds
   void startPolling() {
@@ -797,12 +785,14 @@ String formatTimestamp(String? timestamp) {
   // Async function to fetch kapasitas data from the server
   Future<void> getKapasitas() async {
     try {
-      final response = await http.get(Uri.parse('http://$ipAddress:$port/kapasitas'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/kapasitas'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          kapasitas = data['kapasitas']?.toString() ?? 'Error fetching kapasitas'; // Safely handle null kapasitas
+          kapasitas = data['kapasitas']?.toString() ??
+              'Error fetching kapasitas'; // Safely handle null kapasitas
         });
       } else {
         setState(() {
@@ -838,103 +828,104 @@ String formatTimestamp(String? timestamp) {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      backgroundColor: Colors.pink,
-      title: const Text('PawFeeder'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Navigator.pushNamed(context, '/submenu');
-          },
-        ),
-      ],
-    ),
-    body: Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status Tag Collar
-          const Card(
-            child: ListTile(
-              title: Text('Status Tag Collar'),
-              subtitle: Text('Tersambung'),
-              trailing: Icon(Icons.check_circle, color: Colors.green),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Ketersediaan Makanan
-          Card(
-            child: ListTile(
-              title: Text('Ketersediaan Makanan'),
-              subtitle: Text('$kapasitas%'), // Show kapasitas from polling
-              trailing: const Icon(Icons.fastfood, color: Colors.orange),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Riwayat Pemberian Makanan
-          const Text('Riwayat Pemberian Makanan', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-
-          // Menampilkan riwayat makanan yang terbaru
-          isLoading
-              ? const CircularProgressIndicator()
-              : errorMessage.isNotEmpty
-                  ? Text(errorMessage)
-                  : Column(
-                      children: [
-                        // Menampilkan 3 riwayat makanan terbaru
-                        for (var item in riwayat.take(3))
-                          ListTile(
-                            leading: const Icon(Icons.history),
-                            title: Text(formatTimestamp(item['waktu_makan'])),
-                          ),
-                        const SizedBox(height: 10),
-                        // Tombol untuk melihat selengkapnya
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/history');
-                          },
-                          child: const Text('Lihat Selengkapnya'),
-                        ),
-                      ],
-                    ),
-
-          const Spacer(),
-
-          // ON / OFF Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  postStatus('ON'); // Send ON status to the backend
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text('ON'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  postStatus('OFF'); // Send OFF status to the backend
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('OFF'),
-              ),
-            ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.pink,
+        title: const Text('PawFeeder'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Navigator.pushNamed(context, '/submenu');
+            },
           ),
         ],
       ),
-    ),
-  );
-}
-}
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Tag Collar
+            const Card(
+              child: ListTile(
+                title: Text('Status Tag Collar'),
+                subtitle: Text('Tersambung'),
+                trailing: Icon(Icons.check_circle, color: Colors.green),
+              ),
+            ),
+            const SizedBox(height: 10),
 
+            // Ketersediaan Makanan
+            Card(
+              child: ListTile(
+                title: Text('Ketersediaan Makanan'),
+                subtitle: Text('$kapasitas%'), // Show kapasitas from polling
+                trailing: const Icon(Icons.fastfood, color: Colors.orange),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Riwayat Pemberian Makanan
+            const Text('Riwayat Pemberian Makanan',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            // Menampilkan riwayat makanan yang terbaru
+            isLoading
+                ? const CircularProgressIndicator()
+                : errorMessage.isNotEmpty
+                    ? Text(errorMessage)
+                    : Column(
+                        children: [
+                          // Menampilkan 3 riwayat makanan terbaru
+                          for (var item in riwayat.take(3))
+                            ListTile(
+                              leading: const Icon(Icons.history),
+                              title: Text(formatTimestamp(item['waktu_makan'])),
+                            ),
+                          const SizedBox(height: 10),
+                          // Tombol untuk melihat selengkapnya
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/history');
+                            },
+                            child: const Text('Lihat Selengkapnya'),
+                          ),
+                        ],
+                      ),
+
+            const Spacer(),
+
+            // ON / OFF Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    postStatus('ON'); // Send ON status to the backend
+                  },
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: const Text('ON'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    postStatus('OFF'); // Send OFF status to the backend
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('OFF'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // Halaman Riwayat Makanan // beri api untuk backend app get riwayat pemberian makan
 
@@ -953,7 +944,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // Async function to fetch data
   Future<void> getData() async {
     try {
-      final response = await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/riwayat-makan'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -972,7 +964,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -987,7 +980,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String formatTimestamp(String timestamp) {
     try {
       final dateTime = DateTime.parse(timestamp); // Parse the ISO8601 string
-      final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format date
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format date
       final formattedTime = DateFormat('HH:mm').format(dateTime); // Format time
       return 'Tanggal: $formattedDate, Jam: $formattedTime';
     } catch (e) {
@@ -1011,7 +1005,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
+              ? Center(
+                  child:
+                      Text(errorMessage, style: TextStyle(color: Colors.red)))
               : ListView.builder(
                   padding: const EdgeInsets.all(20.0),
                   itemCount: riwayat.length,
@@ -1020,7 +1016,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                     // Ensure that data is cast to String if needed
                     final waktuMakan = user['waktu_makan']?.toString() ?? 'N/A';
-                    final jumlahPemberian = user['jumlah_pemberian']?.toString() ?? 'N/A';
+                    final jumlahPemberian =
+                        user['jumlah_pemberian']?.toString() ?? 'N/A';
 
                     // Format the timestamp
                     final formattedWaktuMakan = formatTimestamp(waktuMakan);
@@ -1029,7 +1026,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: ListTile(
                         leading: Icon(Icons.calendar_today, color: Colors.pink),
                         title: Text(formattedWaktuMakan),
-                        subtitle: Text('Jumlah pemberian: $jumlahPemberian kalori'),
+                        subtitle:
+                            Text('Jumlah pemberian: $jumlahPemberian kalori'),
                       ),
                     );
                   },
@@ -1037,7 +1035,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
-
 
 //Sub Menu
 class SubmenuScreen extends StatelessWidget {
@@ -1108,7 +1105,6 @@ class SubmenuScreen extends StatelessWidget {
   }
 }
 
-
 //jadwal
 class PenjadwalanPawFeederScreen extends StatefulWidget {
   const PenjadwalanPawFeederScreen({super.key});
@@ -1121,7 +1117,8 @@ class PenjadwalanPawFeederScreen extends StatefulWidget {
 class _PenjadwalanPawFeederScreenState
     extends State<PenjadwalanPawFeederScreen> {
   dynamic jadwal;
-  bool isLoading = false; // Start with false, since the app is not loading initially
+  bool isLoading =
+      false; // Start with false, since the app is not loading initially
   bool isSuccess = false; // Add a success flag to show successful message
   String errorMessage = '';
   String idKucing = ''; // Variable for the id_kucing
@@ -1147,10 +1144,10 @@ class _PenjadwalanPawFeederScreenState
         body: json.encode({
           'id_kucing': idKucing,
           'waktu_makan': waktuMakan,
-          'berapa_kali_makan': waktuMakan.length, // Number of feedings based on selected times
-          'kebutuhan_kalori': kebutuhanKalori.isEmpty
-              ? null
-              : int.parse(kebutuhanKalori),
+          'berapa_kali_makan':
+              waktuMakan.length, // Number of feedings based on selected times
+          'kebutuhan_kalori':
+              kebutuhanKalori.isEmpty ? null : int.parse(kebutuhanKalori),
         }),
       );
 
@@ -1183,7 +1180,8 @@ class _PenjadwalanPawFeederScreenState
     String time = jamController.text;
     if (time.isNotEmpty && !waktuMakan.contains(time)) {
       setState(() {
-        waktuMakan.add(time); // Add the time to the list if it's not already present
+        waktuMakan
+            .add(time); // Add the time to the list if it's not already present
       });
       jamController.clear(); // Clear the input field after adding the time
     }
@@ -1225,9 +1223,11 @@ class _PenjadwalanPawFeederScreenState
             const SizedBox(height: 16),
             TextField(
               controller: jamController,
-              decoration: const InputDecoration(labelText: 'Masukkan Jam Makan'),
+              decoration:
+                  const InputDecoration(labelText: 'Masukkan Jam Makan'),
               keyboardType: TextInputType.number,
-              onSubmitted: (_) => addTimeToList(), // Add time when user presses enter
+              onSubmitted: (_) =>
+                  addTimeToList(), // Add time when user presses enter
             ),
             ElevatedButton(
               onPressed: addTimeToList,
@@ -1235,7 +1235,8 @@ class _PenjadwalanPawFeederScreenState
             ),
             const SizedBox(height: 16),
             Text('Jam Makan yang Dipilih:'),
-            for (var time in waktuMakan) Text(time), // Display all selected feeding times
+            for (var time in waktuMakan)
+              Text(time), // Display all selected feeding times
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: postData,
@@ -1249,14 +1250,15 @@ class _PenjadwalanPawFeederScreenState
                 style: TextStyle(color: Colors.green),
               ) // Show success message when data is successfully saved
             else if (errorMessage.isNotEmpty)
-              Text(errorMessage, style: const TextStyle(color: Colors.red)) // Show error message if any
+              Text(errorMessage,
+                  style: const TextStyle(
+                      color: Colors.red)) // Show error message if any
           ],
         ),
       ),
     );
   }
 }
-
 
 //diskusi
 class DiscussionScreen extends StatefulWidget {
@@ -1268,7 +1270,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   List<dynamic> diskusi = [];
   bool isLoading = true;
   String errorMessage = '';
-  Map<int, TextEditingController> _balasanControllers = {};  // Controller per topik
+  Map<int, TextEditingController> _balasanControllers =
+      {}; // Controller per topik
 
   // Function to fetch discussions (diskusi)
   Future<void> getDiskusi() async {
@@ -1278,7 +1281,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
       if (response.statusCode == 200) {
         setState(() {
-          diskusi = json.decode(response.body); // Parsing the list of discussions
+          diskusi =
+              json.decode(response.body); // Parsing the list of discussions
           isLoading = false;
           // Initialize controller untuk setiap topik
           for (var topik in diskusi) {
@@ -1366,7 +1370,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                       subtitle: Text('Posted at: ${item['waktu_post']}'),
                       children: [
                         // Render seluruh balasan
-                        if (item['balasan'] != null && item['balasan'].isNotEmpty)
+                        if (item['balasan'] != null &&
+                            item['balasan'].isNotEmpty)
                           ...item['balasan'].map<Widget>((balasan) {
                             return ListTile(
                               leading: Icon(Icons.reply, color: Colors.grey),
@@ -1425,29 +1430,29 @@ class _StatusScreenState extends State<StatusScreen> {
 
   // Fungsi untuk mengambil status (diskusi)
   // Function to post a discussion
-Future<void> postDiskusi(String kontenDiskusi) async {
-  try {
-    final response = await http.post(
-      Uri.parse('http://$ipAddress:$port/diskusi'),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({
-        'konten_topik': kontenDiskusi,
-        'waktu_post': DateTime.now().toIso8601String(),
-        'id_pengguna': 1, // Assuming user id is 1, change accordingly
-      }),
-    );
+  Future<void> postDiskusi(String kontenDiskusi) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ipAddress:$port/diskusi'),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          'konten_topik': kontenDiskusi,
+          'waktu_post': DateTime.now().toIso8601String(),
+          'id_pengguna': 1, // Assuming user id is 1, change accordingly
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      print('Diskusi berhasil disimpan');
-      Navigator.pop(context, true);  // Go back to DiskusiScreen and pass 'true' to refresh the diskusi list
-    } else {
-      print('Gagal menyimpan diskusi: ${response.statusCode}');
+      if (response.statusCode == 201) {
+        print('Diskusi berhasil disimpan');
+        Navigator.pop(context,
+            true); // Go back to DiskusiScreen and pass 'true' to refresh the diskusi list
+      } else {
+        print('Gagal menyimpan diskusi: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Terjadi kesalahan: $e');
     }
-  } catch (e) {
-    print('Terjadi kesalahan: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -1488,19 +1493,21 @@ Future<void> postDiskusi(String kontenDiskusi) async {
             ),
           ),
           Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: ElevatedButton(
-            onPressed: () {
-              if (_kontenController.text.isNotEmpty) {
-                postDiskusi(_kontenController.text);  // Kirim diskusi
-              }
-            },
-            child: Text('Post Diskusi'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pink, // Use backgroundColor instead of primary
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: ElevatedButton(
+              onPressed: () {
+                if (_kontenController.text.isNotEmpty) {
+                  postDiskusi(_kontenController.text); // Kirim diskusi
+                }
+              },
+              child: Text('Post Diskusi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Colors.pink, // Use backgroundColor instead of primary
+              ),
             ),
           ),
-        ),
         ],
       ),
     );
@@ -1522,7 +1529,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
 
   Future<void> getArtikel() async {
     try {
-      final response = await http.get(Uri.parse('http://$ipAddress:$port/artikel'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/artikel'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -1541,7 +1549,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -1556,8 +1565,10 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
   String formatTimestamp(String timestamp) {
     try {
       final dateTime = DateTime.parse(timestamp); // Parse dari ISO8601 string
-      final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
-      final formattedTime = DateFormat('HH:mm').format(dateTime); // Format waktu
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format tanggal
+      final formattedTime =
+          DateFormat('HH:mm').format(dateTime); // Format waktu
       return '$formattedDate, Jam: $formattedTime';
     } catch (e) {
       return 'Invalid Date';
@@ -1593,8 +1604,10 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
                       final article = artikel[index];
 
                       // Ambil dan format tanggal_publikasi
-                      final tanggalPublikasi = article['tanggal_publikasi']?.toString() ?? 'N/A';
-                      final formattedTanggalPublikasi = formatTimestamp(tanggalPublikasi);
+                      final tanggalPublikasi =
+                          article['tanggal_publikasi']?.toString() ?? 'N/A';
+                      final formattedTanggalPublikasi =
+                          formatTimestamp(tanggalPublikasi);
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
@@ -1609,7 +1622,8 @@ class _ArtikelScreenState extends State<ArtikelScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => DetailArtikelScreen(article: article),
+                                  builder: (context) =>
+                                      DetailArtikelScreen(article: article),
                                 ),
                               );
                             },
@@ -1666,7 +1680,8 @@ class DetailArtikelScreen extends StatelessWidget {
   String formatTimestamp(String timestamp) {
     try {
       final dateTime = DateTime.parse(timestamp); // Parse the ISO8601 string
-      final formattedDate = DateFormat('yyyy-MM-dd').format(dateTime); // Format date
+      final formattedDate =
+          DateFormat('yyyy-MM-dd').format(dateTime); // Format date
       final formattedTime = DateFormat('HH:mm').format(dateTime); // Format time
       return 'Tanggal: $formattedDate, Jam: $formattedTime';
     } catch (e) {
@@ -1677,7 +1692,8 @@ class DetailArtikelScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Format the date for display
-    final formattedTanggalPublikasi = formatTimestamp(article['tanggal_publikasi'] ?? '');
+    final formattedTanggalPublikasi =
+        formatTimestamp(article['tanggal_publikasi'] ?? '');
 
     return Scaffold(
       appBar: AppBar(
@@ -1749,17 +1765,20 @@ class _AdoptionScreenState extends State<AdoptionScreen> {
   // Function to fetch cats from the backend
   Future<void> getKucing() async {
     try {
-      final response = await http.get(Uri.parse('http://$ipAddress:$port/adopsi'));
+      final response =
+          await http.get(Uri.parse('http://$ipAddress:$port/adopsi'));
 
       if (response.statusCode == 200) {
         setState(() {
-          kucing = json.decode(response.body)['data']; // Parsing the response data
+          kucing =
+              json.decode(response.body)['data']; // Parsing the response data
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load data. Status code: ${response.statusCode}';
+          errorMessage =
+              'Failed to load data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
